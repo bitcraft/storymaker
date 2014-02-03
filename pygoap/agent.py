@@ -91,6 +91,8 @@ class GoapAgent(ObjectBase):
 
         # get the relevancy of each goal according to the state of the agent
         s = ( (g.get_relevancy(self.memory), g) for g in self.goals )
+
+        # sort out goals that are not important (relevancy == 0)
         s = [ g for g in s if g[0] > 0.0 ]
         s.sort(reverse=True, key=lambda i: i[0])
 
@@ -132,29 +134,4 @@ class GoapAgent(ObjectBase):
         if the current action is finished, return the next
         otherwise, return the current action
         """
-
-        # this action is done
-        if self.current_action.state == ACTIONSTATE_FINISHED:
-
-            # there are more actions in the queue, so just return the next one
-            if self.plan:
-                return self.plan.pop()
-
-            # no more actions, so the plan worked!
-            else:
-
-                # let the goal do its magic to the memory manager
-                if self.current_goal:
-                    self.current_goal.touch(self.memory)
-                    self.current_goal = None
-           
-                return NullAction
-
-        # this action failed somehow
-        elif self.current_action.state == ACTIONSTATE_FAILED:
-            print("action failed, don't know what to do now!")
-            raise Exception
-
-        # our action is still running, just run that
-        elif self.current_action.state == ACTIONSTATE_RUNNING:
-            return self.current_action
+        return self.current_action

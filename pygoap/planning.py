@@ -48,7 +48,6 @@ class PlanningNode(object):
             self.memory.update(memory)
 
         if action:
-            print(action)
             cor, effects = action
             [ i.touch(self.memory) for i in effects ]
             [ i.touch(self.delta) for i in effects ]

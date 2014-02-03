@@ -17,6 +17,7 @@ from pygoap.precepts import *
 from pygoap.actionstates import *
 from itertools import chain
 import logging
+import queue
 
 debug = logging.debug
 
@@ -64,7 +65,7 @@ class Environment(object):
         [ self.add(i) for i in entities ]
         [ self.add(i) for i in agents ]
 
-        self.action_que = []
+        self.action_queue = queue.Queue()
 
     @property
     def agents(self):
@@ -90,7 +91,7 @@ class Environment(object):
         Run the Environment for given number of time steps.
         """
 
-        [ self.update(1) for step in xrange(steps) ]
+        [ self.update(1) for step in range(steps) ]
 
     def add(self, entity, position=None):
         """
@@ -141,15 +142,13 @@ class Environment(object):
         [ a.process(p) for a in self.agents ]
 
         # get all the running actions for the agents
-        self.action_que = [ a.running_actions() for a in self.agents ]
-
-        # start any actions that are not started
-        [ action.__enter__() for action in self.action_que 
-            if action.state == ACTIONSTATE_NOT_STARTED ]
+        for agent in self.agents:
+            for action in agent.running_actions():
+                self.action_queue.put(action)
 
         # update all the actions that may be running
-        precepts = [ a.update(time_passed) for a in self.action_que ]
-        precepts = [ p for p in precepts if not p == None ]
+        #precepts = [ a.update(time_passed) for a in self.action_queue ]
+        #precepts = [ p for p in precepts if not p == None ]
 
     def model_action(self, action):
         """
