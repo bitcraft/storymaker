@@ -2,6 +2,7 @@
 Memories are stored precepts.
 """
 
+
 class MemoryManager(set):
     """
     Store and manage precepts.

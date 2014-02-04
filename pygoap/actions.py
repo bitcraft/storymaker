@@ -17,6 +17,7 @@ class Ability:
         """
         raise NotImplementedError
 
+
 class ActionContext:
     """
     Used by planner

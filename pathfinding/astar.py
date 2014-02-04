@@ -1,5 +1,5 @@
-from heapq import heappush, heappop, heappushpop, heapify
-from collections import defaultdict
+from heapq import heappush, heappop
+
 
 class Astar(object):
     pass
@@ -24,30 +24,34 @@ class Node(object):
     def __repr__(self):
         return "<Node: x={} y={}>".format(self.x, self.y)
 
-def getSurrounding(node):
-    return ((node.x-1, node.y-1), (node.x, node.y-1), (node.x+1, node.y-1), \
-            (node.x-1, node.y),   (node.x+1, node.y), \
+
+def get_surrounding(node):
+    return ((node.x-1, node.y-1), (node.x, node.y-1), (node.x+1, node.y-1),
+            (node.x-1, node.y),   (node.x+1, node.y),
             (node.x-1, node.y+1), (node.x, node.y+1), (node.x+1, node.y+1))
+
 
 def dist(start, finish):
     return abs(finish.x - start.x) + abs(finish.y - start.y)
 
-def calcG(node):
-    score=0
+
+def calc_g(node):
+    score = 0
     score += node.g
-    while not node.parent == None:
+    while not node.parent is None:
         node = node.parent
         score += node.g
     return score
 
 
-def calcH(node, finish):
+def calc_h(node, finish):
     # somehow factor in the cost of other nodes
     return abs(finish.x - node.x) + abs(finish.y - node.y)
 
 
 def search(start, finish, factory):
-    """perform basic a* search on a 2d map.
+    """
+    perform basic a* search on a 2d map.
    
     Args:
         start:      tuple that defines the starting position
@@ -55,67 +59,66 @@ def search(start, finish, factory):
         factory:    function that will return a Node object from a position
 
     Factory can return None, which means the area is not passable.
- 
     """
 
-    finishNode = factory(finish)
-    startNode = factory(start)
-    startNode.h = calcH(startNode, finishNode)
+    finish_node = factory(finish)
+    start_node = factory(start)
+    start_node.h = calc_h(start_node, finish_node)
 
     # used to locate nodes in the heap and modify their f scores
-    heapIndex = {}
-    entry = [startNode.g + startNode.h, startNode]
-    heapIndex[startNode] = entry
+    heap_index = {}
+    entry = [start_node.g + start_node.h, start_node]
+    heap_index[start_node] = entry
 
-    openlist = [entry]
+    open_list = [entry]
 
-    nodeHash = {}
-    nodeHash[start] = startNode
+    node_hash = {}
+    node_hash[start] = start_node
 
-    while openlist:
+    while open_list:
         try:
-            f, keyNode = heappop(openlist)
-            while keyNode == None:
-                f, keyNode = heappop(openlist)
+            f, key_node = heappop(open_list)
+            while key_node is None:
+                f, key_node = heappop(open_list)
         except IndexError:
             break
         else:
-            del heapIndex[keyNode]
+            del heap_index[key_node]
 
-        if keyNode == finishNode:
-            path = [(keyNode.x, keyNode.y)]
-            while not keyNode.parent == None:
-                keyNode = keyNode.parent
-                path.append((keyNode.x, keyNode.y))
+        if key_node == finish_node:
+            path = [(key_node.x, key_node.y)]
+            while key_node.parent is not None:
+                key_node = key_node.parent
+                path.append((key_node.x, key_node.y))
             return path
 
-        keyNode.is_closed = 1
+        key_node.is_closed = 1
 
-        for neighbor in getSurrounding(keyNode):
+        for neighbor in get_surrounding(key_node):
             try:
-                node = nodeHash[neighbor]
+                node = node_hash[neighbor]
             except KeyError:
                 node = factory(neighbor)
                 if node:
-                    nodeHash[neighbor] = node
-                    score = keyNode.g + dist(keyNode, node)
-                    node.parent = keyNode
+                    node_hash[neighbor] = node
+                    score = key_node.g + dist(key_node, node)
+                    node.parent = key_node
                     node.g = score
-                    node.h = calcH(node, finishNode)
+                    node.h = calc_h(node, finish_node)
                     entry = [node.g + node.h, node]
-                    heapIndex[node] = entry
-                    heappush(openlist, entry)
+                    heap_index[node] = entry
+                    heappush(open_list, entry)
             else:
                 if not node.is_closed:
-                    score = keyNode.g + dist(keyNode, node)
+                    score = key_node.g + dist(key_node, node)
                     if score < node.g:
-                        node.parent = keyNode
+                        node.parent = key_node
                         node.g = score
-                        entry = heapIndex.pop(node)
+                        entry = heap_index.pop(node)
                         entry[1] = None
-                        newentry = [node.g + node.h, node]
-                        heapIndex[node] = newentry
-                        heappush(openlist, newentry)
+                        new_entry = [node.g + node.h, node]
+                        heap_index[node] = new_entry
+                        heappush(open_list, new_entry)
 
     return []
 
@@ -146,7 +149,7 @@ def search_test(tests=1000):
         except IndexError:
             return None
 
-    return search((0,0), (5,9), factory)
+    return search((0, 0), (5, 9), factory)
 
 
 if __name__ == "__main__":
