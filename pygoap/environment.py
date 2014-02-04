@@ -1,20 +1,14 @@
 """
 Since a pyGOAP agent relies on cues from the environment when planning, having
-a stable and efficient virtual environment is paramount.  
+a stable and efficient virtual environment is paramount.
 
 When coding your game or simulation, you can think of the environment as the
 conduit that connects your actors on screen to their simulated thoughts.  This
 environment simply provides enough basic information to the agents to work.  It
 is up to you to make it useful.
-
-objects should be able to produce actions that would be useful, rather than the
-virtual actors knowing exactly how to use and what to do with other objects.
-This concept comes from 'The Sims', where each agent doesn't need to know how
-to use every object, but can instead query the object for actions to do with it.
 """
 
 from pygoap.precepts import *
-from pygoap.actionstates import *
 from itertools import chain
 import logging
 import queue
@@ -28,8 +22,9 @@ class ObjectBase(object):
     class for objects that agents can interact with
     """
 
-    def __init__(self, name='noname'):
-        self.name = name
+    name = 'noname'
+
+    def __init__(self):
         self._condition = {}
 
     def get_actions(self, other):
@@ -52,20 +47,17 @@ class ObjectBase(object):
 
 
 class Environment(object):
-    """Abstract class representing an Environment.  'Real' Environment classes
-    inherit from this.
+    """
+    Abstract class representing an Environment.
+    'Real' Environment classes inherit from this
     """
 
-    def __init__(self, entities=[], agents=[], time=0):
-        self.time = time
+    def __init__(self):
+        self.time = 0
         self._agents = []
         self._entities = []
         self._positions = {}
-
-        [ self.add(i) for i in entities ]
-        [ self.add(i) for i in agents ]
-
-        self.action_queue = queue.Queue()
+        self._action_queue = queue.Queue()
 
     @property
     def agents(self):
@@ -78,20 +70,10 @@ class Environment(object):
     def get_position(self, entity):
         raise NotImplementedError
 
-
-    # this is a placeholder hack.  proper handling will go through
-    # model_precept()
+    # this is a placeholder hack.  proper handling will go through model_precept()
     def look(self, caller):
         for i in chain(self._entities, self._agents):
-            caller.process(LocationPrecept(i, self._positions[i]))
-
-
-    def run(self, steps=1000):
-        """
-        Run the Environment for given number of time steps.
-        """
-
-        [ self.update(1) for step in range(steps) ]
+            caller.process(PositionPrecept(i, self._positions[i]))
 
     def add(self, entity, position=None):
         """
@@ -102,8 +84,7 @@ class Environment(object):
 
         debug("[env] adding %s", entity)
 
-
-        # hackish way to force agents to re-evaulate their environment
+        # hackish way to force agents to re-evaluate their environment
         for a in self._agents:
             to_remove = []
 
@@ -111,7 +92,7 @@ class Environment(object):
                 if p.name == 'aware':
                     to_remove.append(p)
 
-            [ a.memory.remove(p) for p in to_remove]
+            [a.memory.remove(p) for p in to_remove]
 
         # add the agent
         if isinstance(entity, GoapAgent):
@@ -124,42 +105,42 @@ class Environment(object):
         else:
             self._entities.append(entity)
 
-    def update(self, time_passed):
+    def update(self, td):
         """
         * Update our time
         * Let agents know time has passed
         * Update actions that may be running
         * Add new actions to the que
-
-        this could be rewritten.
         """
 
         # update time in the simulation
-        self.time += time_passed
+        self.time += td
 
         # let all the agents know that time has passed
-        now = TimePrecept(self.time)
+        t_precept = TimePrecept(self.time)
 
         # get all the running actions for the agents
         for agent in self.agents:
-            action = agent.process(now)
-            if action:
-                self.action_queue.put(action)
+            for action in agent.process(t_precept):
+                self._action_queue.put(action)
 
-        while self.action_queue:
+        self.handle_queue(td)
+
+    def handle_queue(self, td):
+        """
+        process all of the actions in the queue
+        """
+        
+        while 1:
             try:
-                action, effects = self.action_queue.get(False)
-                next(action)
-            except queue.Empty:
-                pass
-            except StopIteration:
-                pass
-            else:
-                self.action_queue.put((action, effects))
-
-        # update all the actions that may be running
-        #precepts = [ a.update(time_passed) for a in self.action_queue ]
-        #precepts = [ p for p in precepts if not p == None ]
+                context = self._action_queue.get(False)
+                context.action.send(td)    # give the coroutine a chance to operate
+            except queue.Empty:    # raised when queue is empty
+                break
+            except StopIteration:  # raised when action is finished
+                context.touch()
+            else:                  # action isn't finished, so re-add it to the queue
+                self._action_queue.put(context)
 
     def model_action(self, action):
         """
@@ -172,13 +153,12 @@ class Environment(object):
         """
         for efficiency, please use this for sending a list of precepts
         """
-        if agents == None:
+        if agents is None:
             agents = self.agents
 
         model = self.model_precept
-
         for p in precepts:
-            [ a.process(model(p, a)) for a in agents ]
+            [a.process(model(p, a)) for a in agents]
 
     def model_precept(self, precept, other):
         """
@@ -187,4 +167,3 @@ class Environment(object):
         indiscriminately to all agents.
         """
         return precept
-

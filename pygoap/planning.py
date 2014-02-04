@@ -5,40 +5,42 @@ import logging
 debug = logging.debug
 
 
-
-def get_children(parent0, parent, contexts):
+def get_children(parent0, parent, abilities):
+    """
     def get_used_class(node):
         while node.parent is not None:
             yield node.context
             node = node.parent
 
     used_class = set(get_used_class(parent))
+    """
+    for ability in abilities:
+        #if context in used_class:
+        #    continue
 
-    for context in contexts:
-        if context in used_class:
-            continue
+        for context in ability.get_contexts(parent0, parent.memory):
+            if context.test(parent.memory) > 0.0:
+                yield PlanningNode(parent, ability, context)
 
-        for action in context(parent0, parent.memory):
-            yield PlanningNode(parent, context, action)
 
-def calcG(node):
+def calc_g(node):
     cost = node.cost
-    while not node.parent == None:
+    while not node.parent is None:
         node = node.parent
         cost += node.cost 
     return cost
 
 
 class PlanningNode(object):
-    def __init__(self, parent, context, action, memory=None):
+    def __init__(self, parent, ability, context, memory=None):
         self.parent = parent
+        self.ability = ability
         self.context = context
-        self.action = action
         self.memory = MemoryManager()
         self.delta = MemoryManager()
         #self.cost = action.calc_cost()
         self.cost = 1
-        self.g = calcG(self)
+        self.g = calc_g(self)
         self.h = 1
 
         if parent:
@@ -47,10 +49,9 @@ class PlanningNode(object):
         elif memory:
             self.memory.update(memory)
 
-        if action:
-            cor, effects = action
-            [ i.touch(self.memory) for i in effects ]
-            [ i.touch(self.delta) for i in effects ]
+        if context:
+            context.touch(self.memory)
+            context.touch(self.delta)
 
     def __eq__(self, other):
         if isinstance(other, PlanningNode):
@@ -61,13 +62,13 @@ class PlanningNode(object):
     def __repr__(self):
         if self.parent:
             return "<PlanningNode: '%s', cost: %s, p: %s>" % \
-            (self.action.__class__.__name__,
+            (self.context.__class__.__name__,
                 self.cost,
                 self.parent.action.__class__.__name__)
 
         else:
             return "<PlanningNode: '%s', cost: %s, p: None>" % \
-            (self.action.__class__.__name__,
+            (self.context.__class__.__name__,
                 self.cost)
 
 
@@ -76,42 +77,46 @@ def plan(parent, contexts, start_action, start_memory, goal):
     Return a list of contexts that could be called to satisfy the goal.
     Cannot duplicate contexts in the plan
     """
-    #this works around a 'bug' in python 3.x where the next value in a tuple is compared
-    #compared if the current set are equal.  this ensures that the planning nodes will never
-    #be compared.
+
+    # heap_index works around a 'bug' in python 3.x where the next value in a tuple
+    # is compared if the current set are equal.  using heap_index ensures that the
+    # planning nodes will never be compared (which raises a different exception!)
     key_node = PlanningNode(None, None, start_action, start_memory)
     heap_index = 0
-    openlist = [(0, heap_index, key_node)]
-    closedlist = []
+    open_list = [(0, heap_index, key_node)]
+    closed_list = []
 
     debug("[plan] solve %s starting from %s", goal, start_action)
     debug("[plan] memory supplied is %s", start_memory)
 
-    while openlist:
-        key_node = heappop(openlist)[2]
+    while open_list:
+        key_node = heappop(open_list)[2]
 
         if goal.test(key_node.memory):
-            debug("[plan] successful %s", key_node.action)
+            debug("[plan] successful %s", key_node.context.action)
             break
 
-        closedlist.append(key_node)
+        closed_list.append(key_node)
         for child in get_children(parent, key_node, contexts):
-            if child in closedlist:
+            if child in closed_list:
                 continue
             g = key_node.g + child.cost
 
-            if child not in openlist or g < child.g:
+            if child not in open_list or g < child.g:
                 child.parent = key_node
                 child.g = g
-                if child not in openlist:
-                    heappush(openlist, (child.g + child.h, heap_index, child))
+                if child not in open_list:
+                    heappush(open_list, (child.g + child.h, heap_index, child))
                     heap_index += 1
     else:
         return []
 
-    path = [key_node.action]
+    # sometime in the future, the planner will be able to resolve contexts that can run concurrently.
+    # until then, simply add each step as a single-element list
+    path = [[key_node.context]]
     while key_node.parent is not None:
         key_node = key_node.parent
-        path.append(key_node.action)
+        path.append([key_node.context])
+    #return list(reversed(path))
     return path
 

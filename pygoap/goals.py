@@ -22,8 +22,7 @@ import logging
 debug = logging.debug
 
 
-
-class GoalBase(object):
+class GoalBase:
     """
     Goals:
         can be tested
@@ -112,7 +111,8 @@ class EvalGoal(GoalBase):
                 index = expr.index(cmpop[i])
             except:
                 i += 1
-                if i > 5: break
+                if i > 5:
+                    break
 
         try:
             side0 = float(eval(" ".join(expr[:index]), memory))
@@ -211,7 +211,6 @@ class PositionGoal(GoalBase):
             return 1.0
 
         else:
-
             d = distance(position, target_position)
             if d > self.dist:
                 return (float(self.dist / d)) * float(self.dist)
@@ -239,8 +238,7 @@ class HasItemGoal(GoalBase):
 
     def test(self, memory):
         for precept in memory.of_class(PositionPrecept):
-            if (precept.position[0] == 'self' and
-                precept.entity == self.args[0]):
+            if precept.position[0] == 'self' and precept.entity == self.args[0]:
                 return 1.0
         
         return 0.0

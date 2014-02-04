@@ -1,18 +1,18 @@
 from pygoap.environment import ObjectBase
 from pygoap.planning import plan
-from pygoap.actions import ActionContext
 from pygoap.memory import MemoryManager
-from pygoap.actionstates import *
 from pygoap.precepts import *
 import logging
 
 debug = logging.debug
 
-NullAction = (None, [])
+NullAction = None
+
 
 # required to reduce memory usage
 def time_filter(precept):
     return None if isinstance(precept, TimePrecept) else precept
+
 
 class GoapAgent(ObjectBase):
     """
@@ -27,8 +27,8 @@ class GoapAgent(ObjectBase):
     interested = []
     idle_timeout = 30
 
-    def __init__(self, name=None):
-        super(GoapAgent, self).__init__(name)
+    def __init__(self):
+        super(GoapAgent, self).__init__()
         self.memory = MemoryManager()
         self.planner = plan
 
@@ -36,12 +36,11 @@ class GoapAgent(ObjectBase):
 
         self.goals = []             # all goals this instance can use
         self.filters = []           # list of methods to use as a filter
-        self.contexts = []          # all actions this npc can perform (defined by action builders!)
+        self.abilities = []          # all actions this npc can perform (defined by action builders!)
         self.plan = []              # list of actions to perform
-                                    # '-1' will be the action currently used
 
         # this special filter will prevent time precepts from being stored
-        self.filters.append(time_filter)
+        #self.filters.append(time_filter)
 
     def add_goal(self, goal):
         self.goals.append(goal)
@@ -49,11 +48,11 @@ class GoapAgent(ObjectBase):
     def remove_goal(self, goal):
         self.goals.remove(goal)
 
-    def add_context(self, action):
-        self.contexts.append(action)
+    def add_ability(self, action):
+        self.abilities.append(action)
 
-    def remove_context(self, action):
-        self.contexts.remove(action)
+    def remove_ability(self, action):
+        self.abilities.remove(action)
 
     def filter_precept(self, precept):
         """
@@ -79,8 +78,10 @@ class GoapAgent(ObjectBase):
             self.memory.add(precept)
             self.replan()
 
-        return self.next_action
+        if self.plan:
+            return self.plan.pop()
 
+        return []
 
     def replan(self):
         """
@@ -88,28 +89,28 @@ class GoapAgent(ObjectBase):
         """
 
         # get the relevancy of each goal according to the state of the agent
-        s = ( (g.get_relevancy(self.memory), g) for g in self.goals )
+        s = ((g.get_relevancy(self.memory), g) for g in self.goals)
 
-        # sort out goals that are not important (relevancy == 0)
-        s = [ g for g in s if g[0] > 0.0 ]
+        # remove goals that are not important (relevancy == 0)
+        s = [g for g in s if g[0] > 0.0]
+
+        # sort goals so that highest relevancy are first
         s.sort(reverse=True, key=lambda i: i[0])
 
         debug("[agent] %s has goals %s", self, s)
 
+        # starting from the most relevant goal, attempt to make a plan
         start_action = NullAction
-
-        # starting for the most relevant goal, attempt to make a plan
-        self.plan = []      
+        self.plan = []
         for score, goal in s:
-            tentative_plan = self.planner(self, self.contexts, start_action, self.memory, goal)
+            tentative_plan = self.planner(self, self.abilities, start_action, self.memory, goal)
 
             if tentative_plan:
-                tentative_plan.pop()
-                pretty = list(reversed(tentative_plan[:]))
-                debug("[agent] %s has planned to %s", self, goal)
-                debug("[agent] %s has plan %s", self, pretty)
+                tentative_plan.pop(-1)
                 self.plan = tentative_plan
                 self.current_goal = goal
+                debug("[agent] %s has planned to %s", self, goal)
+                debug("[agent] %s has plan %s", self, self.plan)
                 break
 
     def running_actions(self):
