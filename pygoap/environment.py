@@ -137,14 +137,25 @@ class Environment(object):
         # update time in the simulation
         self.time += time_passed
 
-        # let all the agents know that time has passed and bypass the modeler
-        p = TimePrecept(self.time) 
-        [ a.process(p) for a in self.agents ]
+        # let all the agents know that time has passed
+        now = TimePrecept(self.time)
 
         # get all the running actions for the agents
         for agent in self.agents:
-            for action in agent.running_actions():
+            action = agent.process(now)
+            if action:
                 self.action_queue.put(action)
+
+        while self.action_queue:
+            try:
+                action, effects = self.action_queue.get(False)
+                next(action)
+            except queue.Empty:
+                pass
+            except StopIteration:
+                pass
+            else:
+                self.action_queue.put((action, effects))
 
         # update all the actions that may be running
         #precepts = [ a.update(time_passed) for a in self.action_queue ]
