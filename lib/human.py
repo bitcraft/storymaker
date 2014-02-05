@@ -201,9 +201,9 @@ class Human(GoapAgent):
 
     def __init__(self):
         super(Human, self).__init__()
-        self.name = "Pathetic Human {}".format(Human.population)
         self.traits = Traits()
         self.sex = 0
+        self.name = "Pathetic Human {} ({})".format(Human.population, self.sex)
         Human.population += 1
 
     def reset(self):
@@ -221,6 +221,7 @@ class Human(GoapAgent):
         """
         add abilities that are inherent to humans
         """
+        self.name = "Pathetic Human {} ({})".format(Human.population, self.sex)
         if self.sex:
             self.add_ability(CreateLifeAbility())
             self.add_ability(GiveBirthAbility())
@@ -242,9 +243,9 @@ class Human(GoapAgent):
             friendly_goal = SimpleGoal(chatter=True)
             self.add_goal(friendly_goal)
 
-        #if self.traits.touchy > .50:
-        #    copulate_goal = SimpleGoal(had_sex=True)
-        #    self.add_goal(copulate_goal)
+        if self.traits.touchy > .50:
+            copulate_goal = SimpleGoal(had_sex=True)
+            self.add_goal(copulate_goal)
 
     def birth(self):
         pass
@@ -252,7 +253,7 @@ class Human(GoapAgent):
 
 def random_human():
     h = Human()
-    h.sex = bool(random.randint(0, 1))
+    h.sex = random.randint(0, 1)
     h.traits = Traits.random()
     h.model()
     return h
