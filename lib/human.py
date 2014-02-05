@@ -3,6 +3,8 @@ __author__ = 'Leif'
 from pygoap.actions import Ability, ActionContext
 from pygoap.agent import GoapAgent
 from pygoap.goals import *
+from pygoap.precepts import *
+from lib.english import make_english
 import random
 
 
@@ -16,19 +18,53 @@ def coroutine(func):
 
 
 @coroutine
-def hello_action(caller):
+def age_action(context, caller):
+    """
+    Makes the caller older
+    """
+
+    age = 0
     try:
-        td = (yield)
-        print("Hello, I'm {}!".format(caller.name))
+        while 1:
+            td = (yield)
+            age += td
     except GeneratorExit:
         pass
 
 
-class HelloAbility(Ability):
+class AgeAbility(Ability):
     def get_contexts(self, caller, memory=None):
-        action = hello_action(caller)
-        effects = [SimpleGoal(introduced_self=True)]
-        context = ActionContext(self, caller, action, None, effects)
+        effects = []
+        prereqs = []
+        action = age_action(self, caller)
+        context = ActionContext(self, caller, action, prereqs, effects)
+        yield context
+
+
+@coroutine
+def give_birth_action(context, caller):
+    """
+    Make a new human child
+    """
+
+    try:
+        td = (yield)
+        p = ActionPrecept(caller, "birth", None)
+        caller.environment.enqueue_precept(p)
+    except GeneratorExit:
+        pass
+
+
+class GiveBirthAbility(Ability):
+    """
+    Make a new human child
+    """
+
+    def get_contexts(self, caller, memory=None):
+        effects = [SimpleGoal(has_baby=True), SimpleGoal(ready_to_birth=False)]
+        prereqs = [SimpleGoal(ready_to_birth=True)]
+        action = give_birth_action(self, caller)
+        context = ActionContext(self, caller, action, prereqs, effects)
         yield context
 
 
@@ -39,9 +75,7 @@ def create_life_action(context, caller):
         while 1:
             td = (yield)
             if ttl <= 0:
-                print('birth')
                 break
-            print('creating life...{}'.format(ttl))
             ttl -= td
     except GeneratorExit:
         pass
@@ -49,8 +83,8 @@ def create_life_action(context, caller):
 
 class CreateLifeAbility(Ability):
     def get_contexts(self, caller, memory=None):
-        effects = [SimpleGoal(has_baby=True)]
-        prereqs = [SimpleGoal(preggers=True)]
+        effects = [SimpleGoal(ready_to_birth=True)]
+        prereqs = [SimpleGoal(had_sex=True)]
         action = create_life_action(self, caller)
         context = ActionContext(self, caller, action, prereqs, effects)
         yield context
@@ -60,40 +94,107 @@ class CreateLifeAbility(Ability):
 def copulate_action(context, caller):
     try:
         td = (yield)
-        print('just had sex!')
+        p = ActionPrecept(caller, "sex", None)
+        caller.environment.enqueue_precept(p)
     except GeneratorExit:
         pass
 
 
 class CopulateAbility(Ability):
     def get_contexts(self, caller, memory=None):
-        effects = [SimpleGoal(preggers=True)]
+        effects = [SimpleGoal(had_sex=True)]
         action = copulate_action(self, caller)
         context = ActionContext(self, caller, action, None, effects)
         yield context
 
 
+@coroutine
+def speak_action(context, caller, p):
+    try:
+        td = (yield)
+        print('[{}]\t\t{}'.format(caller.name, make_english(caller, p)))
+    except GeneratorExit:
+        pass
+
+
+class ConverseAbility(Ability):
+    """
+    examine caller's memory and create some things to say
+    """
+    def get_contexts(self, caller, memory=None):
+        if memory is not None:
+            p = random.choice(list(memory))
+            effects = [SimpleGoal(chatter=True)]
+            action = speak_action(self, caller, p)
+            yield ActionContext(self, caller, action, None, effects)
+
+
+class Trait:
+    def __init__(self, name, kind):
+        self.name = name
+        self.value = kind()
+
+    def __eq__(self, other):
+        return self.value == other
+
+    def __gt__(self, other):
+        return self.value > other
+
+    def __lt__(self, other):
+        return self.value < other
+
+
+class Traits:
+    default = [
+        "strength",
+        "perception",
+        "endurance",
+        "charisma",
+        "intelligence",
+        "agility",
+        "luck",
+        "chatty",
+        "morality",
+        "tradition",
+        "alignment",
+        "touchy",
+        "esteem",
+        "karma",
+        "report"
+    ]
+
+    def __init__(self):
+        self.__traits = {}
+        for name in Traits.default:
+            self.__traits[name] = Trait(name, float)
+
+    def __getattr__(self, item):
+        try:
+            return self.__traits[item]
+        except KeyError:
+            raise AttributeError
+
+    @classmethod
+    def random(cls):
+        t = cls()
+        for key, value in t.__traits.items():
+            t.__traits[key].value = random.random()
+        return t
+
+
 class Human(GoapAgent):
-    """
-    actor that has the following human traits:
-        emotion
-        identity
-        desire
-        breeding
-        is sexed (male / female)
-    """
+    population = 0
 
     def __init__(self):
         super(Human, self).__init__()
-        self.name = "Pathetic Human"
+        self.name = "Pathetic Human {}".format(Human.population)
+        self.traits = Traits()
         self.sex = 0
-        self.friendly = 0
-        self.sex_desire = 0
+        Human.population += 1
 
     def reset(self):
         self.sex = 0
-        self.friendly = 0
-        self.sex_desire = 0
+        self.traits = Traits()
         self.goals = []
         self.abilities = []
         self.plan = []
@@ -108,10 +209,11 @@ class Human(GoapAgent):
         """
         if self.sex:
             self.add_ability(CreateLifeAbility())
+            self.add_ability(GiveBirthAbility())
 
-        if self.friendly > .25:
-            self.add_ability(HelloAbility())
-            self.add_ability(CopulateAbility())
+        #self.add_ability(AgeAbility())
+        self.add_ability(ConverseAbility())
+        self.add_ability(CopulateAbility())
 
     def model_goals(self):
         """
@@ -119,16 +221,16 @@ class Human(GoapAgent):
         """
 
         if self.sex:
-            preggers_goal = SimpleGoal(has_baby=True)
-            self.add_goal(preggers_goal)
+            baby_goal = SimpleGoal(has_baby=True)
+            self.add_goal(baby_goal)
 
-        if self.friendly > .25:
-            friendly_goal = SimpleGoal(introduced_self=True)
+        if self.traits.chatty > 0:
+            friendly_goal = SimpleGoal(chatter=True)
             self.add_goal(friendly_goal)
 
-        if self.sex_desire > .50:
-            copulate_goal = SimpleGoal(had_sex=True)
-            self.add_goal(copulate_goal)
+        #if self.traits.touchy > .50:
+        #    copulate_goal = SimpleGoal(had_sex=True)
+        #    self.add_goal(copulate_goal)
 
     def birth(self):
         pass
@@ -137,7 +239,6 @@ class Human(GoapAgent):
 def random_human():
     h = Human()
     h.sex = bool(random.randint(0, 1))
-    h.friendly = random.random()
-    h.sex_desire = random.random()
+    h.traits = Traits.random()
     h.model()
     return h

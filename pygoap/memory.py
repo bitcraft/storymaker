@@ -8,8 +8,10 @@ class MemoryManager(set):
     Store and manage precepts.
     """
 
+    max_size = 20
+
     def add(self, other):
-        if len(self) > 20:
+        if len(self) > MemoryManager.max_size:
             self.pop()
         super(MemoryManager, self).add(other)
 

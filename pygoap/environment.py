@@ -58,6 +58,7 @@ class Environment(object):
         self._entities = []
         self._positions = {}
         self._action_queue = queue.Queue()
+        self._precept_queue = queue.Queue()
 
     @property
     def agents(self):
@@ -119,46 +120,65 @@ class Environment(object):
         # let all the agents know that time has passed
         t_precept = TimePrecept(self.time)
 
-        # get all the running actions for the agents
+        # speedier version of broadcast_precepts() that just sends out time precepts
         for agent in self.agents:
             for action in agent.process(t_precept):
                 self._action_queue.put(action)
 
-        self.handle_queue(td)
+        self.handle_precepts()
+        self.handle_actions(td)
 
-    def handle_queue(self, td):
+    def handle_precepts(self):
+        """
+        process all of the precepts in the queue
+        """
+
+        l = []
+        while 1:
+            try:
+                precept = self._precept_queue.get(False)
+                l.append(precept)
+            except queue.Empty:             # raised when queue is empty
+                self.broadcast_precepts(l)
+                break
+
+    def handle_actions(self, td):
         """
         process all of the actions in the queue
         """
-        
+
         while 1:
             try:
                 context = self._action_queue.get(False)
-                context.action.send(td)    # give the coroutine a chance to operate
-            except queue.Empty:    # raised when queue is empty
+                context.action.send(td)     # give the coroutine a chance to operate
+            except queue.Empty:             # raised when queue is empty
                 break
-            except StopIteration:  # raised when action is finished
+            except StopIteration:           # raised when action is finished
                 context.touch()
-            else:                  # action isn't finished, so re-add it to the queue
+            else:                           # action isn't finished, so re-add it to the queue
                 self._action_queue.put(context)
+
+    def enqueue_precept(self, precept):
+        self._precept_queue.put(precept)
 
     def model_action(self, action):
         """
         Used to model how an action interacts with the environment.
         Environment can ability to silence actions if they are not able to run.
         """
-        return True
+        return action
 
-    def broadcast_precepts(self, precepts, agents=None):
+    def broadcast_precepts(self, precepts):
         """
-        for efficiency, please use this for sending a list of precepts
+        send adn model a list of precepts
         """
-        if agents is None:
-            agents = self.agents
-
         model = self.model_precept
         for p in precepts:
-            [a.process(model(p, a)) for a in agents]
+            for agent in self._agents:
+                for action in agent.process(model(p, agent)):
+                    action = self.model_action(action)
+                    if action:
+                        self._action_queue.put(action)
 
     def model_precept(self, precept, other):
         """

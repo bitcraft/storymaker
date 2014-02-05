@@ -13,3 +13,6 @@ TimePrecept = nt('TimePrecept', 'time')
 
 # used to remember a single piece of data
 DatumPrecept = nt('DatumPrecept', 'name, value')
+
+# used to remember "seeing" an action performed
+ActionPrecept = nt('ActionPrecept', 'entity, action, object')

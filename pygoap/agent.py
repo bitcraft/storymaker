@@ -75,7 +75,8 @@ class GoapAgent(ObjectBase):
 
         if precept:
             debug("[agent] %s recv'd precept %s", self, precept)
-            self.memory.add(precept)
+            if not isinstance(precept, TimePrecept):
+                self.memory.add(precept)
             self.replan()
 
         if self.plan:
