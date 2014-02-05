@@ -57,7 +57,7 @@ class Environment(object):
         self._agents = []
         self._entities = []
         self._positions = {}
-        self._action_queue = queue.Queue()
+        self._context_queue = queue.Queue()
         self._precept_queue = queue.Queue()
 
     @property
@@ -123,7 +123,7 @@ class Environment(object):
         # speedier version of broadcast_precepts() that just sends out time precepts
         for agent in self.agents:
             for action in agent.process(t_precept):
-                self._action_queue.put(action)
+                self._context_queue.put(action)
 
         self.handle_precepts()
         self.handle_actions(td)
@@ -147,38 +147,43 @@ class Environment(object):
         process all of the actions in the queue
         """
 
+        next_queue = queue.Queue()
         while 1:
             try:
-                context = self._action_queue.get(False)
-                context.action.send(td)     # give the coroutine a chance to operate
-            except queue.Empty:             # raised when queue is empty
+                context = self._context_queue.get(False)
+                context.action.send(self.time)  # give the coroutine a chance to operate
+            except queue.Empty:                 # raised when queue is empty
+                self._context_queue = next_queue
                 break
-            except StopIteration:           # raised when action is finished
+            except StopIteration:               # raised when action is finished
                 context.touch()
-            else:                           # action isn't finished, so re-add it to the queue
-                self._action_queue.put(context)
+            else:                               # action isn't finished, so re-add it to the queue
+                next_queue.put(context)
 
     def enqueue_precept(self, precept):
         self._precept_queue.put(precept)
 
-    def model_action(self, action):
+    def model_context(self, context):
         """
         Used to model how an action interacts with the environment.
         Environment can ability to silence actions if they are not able to run.
         """
-        return action
+        return context
 
     def broadcast_precepts(self, precepts):
         """
-        send adn model a list of precepts
+        broadcast and model a list of precepts
         """
-        model = self.model_precept
+        model_precept = self.model_precept
+        model_context = self.model_context
+        enqueue_context = self._context_queue.put
+
         for p in precepts:
             for agent in self._agents:
-                for action in agent.process(model(p, agent)):
-                    action = self.model_action(action)
-                    if action:
-                        self._action_queue.put(action)
+                for context in agent.process(model_precept(p, agent)):
+                    context = model_context(context)
+                    if context:
+                        enqueue_context(context)
 
     def model_precept(self, precept, other):
         """

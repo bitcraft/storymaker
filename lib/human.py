@@ -5,6 +5,7 @@ from pygoap.agent import GoapAgent
 from pygoap.goals import *
 from pygoap.precepts import *
 from lib.english import make_english
+from collections import defaultdict
 import random
 
 
@@ -26,7 +27,7 @@ def age_action(context, caller):
     age = 0
     try:
         while 1:
-            td = (yield)
+            now = (yield)
             age += td
     except GeneratorExit:
         pass
@@ -48,7 +49,7 @@ def give_birth_action(context, caller):
     """
 
     try:
-        td = (yield)
+        now = (yield)
         p = ActionPrecept(caller, "birth", None)
         caller.environment.enqueue_precept(p)
     except GeneratorExit:
@@ -70,13 +71,15 @@ class GiveBirthAbility(Ability):
 
 @coroutine
 def create_life_action(context, caller):
-    ttl = 3
+    last_time = None
+    ttl = 5
     try:
         while 1:
-            td = (yield)
-            if ttl <= 0:
+            now = (yield)
+            if last_time is None:
+                last_time = now
+            if now - last_time >= ttl:
                 break
-            ttl -= td
     except GeneratorExit:
         pass
 
@@ -93,7 +96,7 @@ class CreateLifeAbility(Ability):
 @coroutine
 def copulate_action(context, caller):
     try:
-        td = (yield)
+        now = (yield)
         p = ActionPrecept(caller, "sex", None)
         caller.environment.enqueue_precept(p)
     except GeneratorExit:
@@ -111,7 +114,7 @@ class CopulateAbility(Ability):
 @coroutine
 def speak_action(context, caller, p):
     try:
-        td = (yield)
+        now = (yield)
         print('[{}]\t\t{}'.format(caller.name, make_english(caller, p)))
     except GeneratorExit:
         pass
@@ -121,12 +124,23 @@ class ConverseAbility(Ability):
     """
     examine caller's memory and create some things to say
     """
+
+    # this will be moved in to another class someday
+    def __init__(self):
+        super(ConverseAbility, self).__init__()
+        self.perception_map = defaultdict(list)
+
     def get_contexts(self, caller, memory=None):
         if memory is not None:
             p = random.choice(list(memory))
-            effects = [SimpleGoal(chatter=True)]
-            action = speak_action(self, caller, p)
-            yield ActionContext(self, caller, action, None, effects)
+            if p not in self.perception_map[caller]:
+                effects = [SimpleGoal(chatter=True)]
+                action = speak_action(self, caller, p)
+
+                # assume when speaking, all other actors will receive the message
+                self.perception_map[caller].append(p)
+
+                yield ActionContext(self, caller, action, None, effects)
 
 
 class Trait:
