@@ -9,115 +9,89 @@ from collections import defaultdict
 import random
 
 
-def coroutine(func):
-    def start(*args, **kwargs):
-        cr = func(*args, **kwargs)
-        next(cr)
-        return cr
-
-    return start
-
-
-@coroutine
-def age_action(context, caller):
-    """
-    Makes the caller older
-    """
-
-    age = 0
-    try:
-        while 1:
-            now = (yield)
-            age += td
-    except GeneratorExit:
-        pass
-
-
 class AgeAbility(Ability):
     def get_contexts(self, caller, memory=None):
         effects = []
         prereqs = []
-        action = age_action(self, caller)
+        action = AgeAction(self, caller)
         context = ActionContext(self, caller, action, prereqs, effects)
         yield context
 
 
-@coroutine
-def give_birth_action(context, caller):
+class AgeAction(Action):
     """
-    Make a new human child
+    simulate human aging
     """
 
-    try:
-        now = (yield)
-        p = ActionPrecept(caller, "birth", None)
-        caller.environment.enqueue_precept(p)
-    except GeneratorExit:
-        pass
+    def __init__(self, *args, **kwargs):
+        super(AgeAction, self).__init__(*args, **kwargs)
+        self.age = 0
+
+    def update(self, dt):
+        self.age += dt
 
 
 class GiveBirthAbility(Ability):
-    """
-    Make a new human child
-    """
-
     def get_contexts(self, caller, memory=None):
         effects = [SimpleGoal(has_baby=True), SimpleGoal(ready_to_birth=False)]
         prereqs = [SimpleGoal(ready_to_birth=True)]
-        action = give_birth_action(self, caller)
+        action = GiveBirthAction(self, caller)
         context = ActionContext(self, caller, action, prereqs, effects)
         yield context
 
 
-@coroutine
-def create_life_action(context, caller):
-    last_time = None
-    ttl = 5
-    try:
-        while 1:
-            now = (yield)
-            if last_time is None:
-                last_time = now
-            if now - last_time >= ttl:
-                break
-    except GeneratorExit:
-        pass
+class GiveBirthAction(Action):
+    """
+    simulate birth
+    """
+
+    def update(self, dt):
+        self.finished = True
+        return ActionPrecept(self.caller, "birth", None)
 
 
-class CreateLifeAbility(Ability):
+class GestationAbility(Ability):
     def get_contexts(self, caller, memory=None):
         effects = [SimpleGoal(ready_to_birth=True)]
         prereqs = [SimpleGoal(had_sex=True)]
-        action = create_life_action(self, caller)
+        action = GestationAction(self, caller)
         context = ActionContext(self, caller, action, prereqs, effects)
         yield context
 
 
-@coroutine
-def copulate_action(context, caller):
-    try:
-        now = (yield)
-        p = ActionPrecept(caller, "sex", None)
-        caller.environment.enqueue_precept(p)
-    except GeneratorExit:
-        pass
+class GestationAction(Action):
+    """
+    simulate child gestation
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(GestationAction, self).__init__(*args, **kwargs)
+        self.ttl = 5
+
+    def update(self, dt):
+        self.ttl -= dt
+        if self.ttl <= 0:
+            self.finished = True
 
 
 class CopulateAbility(Ability):
     def get_contexts(self, caller, memory=None):
         effects = [SimpleGoal(had_sex=True)]
-        action = copulate_action(self, caller)
+        action = CopulateAction(self, caller)
         context = ActionContext(self, caller, action, None, effects)
         yield context
 
 
-@coroutine
-def speak_action(context, caller, p):
-    try:
-        now = (yield)
-        print('[{}]\t\t{}'.format(caller.name, make_english(caller, p)))
-    except GeneratorExit:
-        pass
+class CopulateAction(Action):
+    """
+    simulate sex
+
+    TODO: make it with a partner!
+    """
+
+    def update(self, dt):
+        self.finished = True
+        return ActionPrecept(self.caller, "sex", None)
 
 
 class SpeakAction(Action):
@@ -136,14 +110,14 @@ class SpeakAction(Action):
         return p
 
 
-class ConverseAbility(Ability):
+class SpeakAbility(Ability):
     """
     examine caller's memory and create some things to say
     """
 
     # this will be moved in to another class someday
     def __init__(self):
-        super(ConverseAbility, self).__init__()
+        super(SpeakAbility, self).__init__()
         self.perception_map = defaultdict(list)
 
     def get_contexts_(self, caller, memory=None):
@@ -271,13 +245,12 @@ class Human(GoapAgent):
         """
         self.name = "Pathetic Human {} ({})".format(Human.population, self.sex)
         if self.sex:
-            pass
-            #self.add_ability(CreateLifeAbility())
-            #self.add_ability(GiveBirthAbility())
+            self.add_ability(GestationAbility())
+            self.add_ability(GiveBirthAbility())
 
-        #self.add_ability(AgeAbility())
-        self.add_ability(ConverseAbility())
-        #self.add_ability(CopulateAbility())
+        self.add_ability(AgeAbility())
+        self.add_ability(SpeakAbility())
+        self.add_ability(CopulateAbility())
 
     def model_goals(self):
         """

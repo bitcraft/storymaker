@@ -152,16 +152,17 @@ class Environment(object):
         while 1:
             try:
                 context = self._context_queue.pop()
-                precept = context.action.update(td)
+                precept = context.action.next(td)
                 self._precept_queue.put(precept)
 
                 if isinstance(precept, SpeechPrecept):
                     print(precept.message)
 
                 if context.action.finished:
+                    print("{} finished".format(context))
                     context.touch()
                 else:
-                    next_queue.append(context)
+                    next_queue.appendleft(context)
 
             except IndexError:                 # raised when queue is empty
                 self._context_queue = next_queue

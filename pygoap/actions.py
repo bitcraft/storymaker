@@ -21,12 +21,28 @@ class Ability:
 class Action:
     """
     make a basic english sentence that describes a memory (precept)
+
+    duration should be at least 1.  if it is 0 (or less), then the agent will
+    make a new plan on each precept during a time step.  this will kill
+    performance and there seem to be no real advantages to this design.
     """
 
     def __init__(self, context, caller):
         self.context = context
         self.caller = caller
+        self.duration = 1
         self.finished = False
+
+    def next(self, dt):
+        """
+        called by the environment.  do not override.  use update instead.
+        """
+        self.duration -= dt
+        if self.duration <= 0:
+            self.finished = True
+
+        if not self.finished:
+            return self.update(dt)
 
     def update(self, dt):
         raise NotImplementedError
