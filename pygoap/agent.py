@@ -36,7 +36,7 @@ class GoapAgent(ObjectBase):
 
         self.goals = []             # all goals this instance can use
         self.filters = []           # list of methods to use as a filter
-        self.abilities = []          # all actions this npc can perform (defined by action builders!)
+        self.abilities = []         # all actions this agent can perform (defined by action contexts!)
         self.plan = []              # list of actions to perform
 
         # this special filter will prevent time precepts from being stored
@@ -77,10 +77,13 @@ class GoapAgent(ObjectBase):
             debug("[agent] %s recv'd precept %s", self, precept)
             if not isinstance(precept, TimePrecept):
                 self.memory.add(precept)
-            self.replan()
 
-        if self.plan:
+        try:
             return self.plan.pop()
+        except IndexError:
+            self.replan()
+            if self.plan:
+                return self.plan.pop()
 
         return []
 

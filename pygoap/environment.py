@@ -12,6 +12,7 @@ from pygoap.precepts import *
 from itertools import chain
 import logging
 import queue
+import collections
 
 debug = logging.debug
 
@@ -57,7 +58,7 @@ class Environment(object):
         self._agents = []
         self._entities = []
         self._positions = {}
-        self._context_queue = queue.Queue()
+        self._context_queue = collections.deque()
         self._precept_queue = queue.Queue()
 
     @property
@@ -123,7 +124,7 @@ class Environment(object):
         # speedier version of broadcast_precepts() that just sends out time precepts
         for agent in self.agents:
             for action in agent.process(t_precept):
-                self._context_queue.put(action)
+                self._context_queue.appendleft(action)
 
         self.handle_precepts()
         self.handle_actions(td)
@@ -138,7 +139,7 @@ class Environment(object):
             try:
                 precept = self._precept_queue.get(False)
                 l.append(precept)
-            except queue.Empty:             # raised when queue is empty
+            except queue.Empty:
                 self.broadcast_precepts(l)
                 break
 
@@ -147,21 +148,26 @@ class Environment(object):
         process all of the actions in the queue
         """
 
-        next_queue = queue.Queue()
+        next_queue = collections.deque()
         while 1:
             try:
-                context = self._context_queue.get(False)
-                context.action.send(self.time)  # give the coroutine a chance to operate
-            except queue.Empty:                 # raised when queue is empty
+                context = self._context_queue.pop()
+                precept = context.action.update(td)
+                self._precept_queue.put(precept)
+
+                if isinstance(precept, SpeechPrecept):
+                    print(precept.message)
+
+                if context.action.finished:
+                    raise StopIteration
+
+            except IndexError:                 # raised when queue is empty
                 self._context_queue = next_queue
                 break
             except StopIteration:               # raised when action is finished
                 context.touch()
             else:                               # action isn't finished, so re-add it to the queue
-                next_queue.put(context)
-
-    def enqueue_precept(self, precept):
-        self._precept_queue.put(precept)
+                next_queue.append(context)
 
     def model_context(self, context):
         """
@@ -176,7 +182,7 @@ class Environment(object):
         """
         model_precept = self.model_precept
         model_context = self.model_context
-        enqueue_context = self._context_queue.put
+        enqueue_context = self._context_queue.appendleft
 
         for p in precepts:
             for agent in self._agents:

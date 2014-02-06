@@ -1,6 +1,6 @@
 __author__ = 'Leif'
 
-from pygoap.actions import Ability, ActionContext
+from pygoap.actions import *
 from pygoap.agent import GoapAgent
 from pygoap.goals import *
 from pygoap.precepts import *
@@ -120,6 +120,22 @@ def speak_action(context, caller, p):
         pass
 
 
+class SpeakAction(Action):
+    """
+    make a basic english sentence that describes a memory (precept)
+    """
+
+    def __init__(self, context, caller, p):
+        super(SpeakAction, self).__init__(context, caller)
+        self.p = p
+
+    def update(self, dt):
+        msg = '[{}]\t\t{}'.format(self.caller.name, make_english(self.caller, self.p))
+        p = SpeechPrecept(self.caller, msg)
+        self.finished = True
+        return p
+
+
 class ConverseAbility(Ability):
     """
     examine caller's memory and create some things to say
@@ -130,7 +146,7 @@ class ConverseAbility(Ability):
         super(ConverseAbility, self).__init__()
         self.perception_map = defaultdict(list)
 
-    def get_contexts(self, caller, memory=None):
+    def get_contexts_(self, caller, memory=None):
         if memory is not None:
             p = random.choice(list(memory))
             if p not in self.perception_map[caller]:
@@ -141,6 +157,12 @@ class ConverseAbility(Ability):
                 self.perception_map[caller].append(p)
 
                 yield ActionContext(self, caller, action, None, effects)
+
+    def get_contexts(self, caller, memory=None):
+        p = SpeechPrecept(caller, "context!!!{}".format(caller.name))
+        effects = [SimpleGoal(chatter=True)]
+        action = SpeakAction(self, caller, p)
+        yield ActionContext(self, caller, action, None, effects)
 
 
 class Trait:
@@ -159,6 +181,10 @@ class Trait:
 
 
 class Traits:
+    """
+    Traits are generally not modified, and goals should not normally be
+    triggered by changes or the state of a trait.
+    """
     default = [
         "strength",
         "perception",
@@ -179,7 +205,7 @@ class Traits:
 
     def __init__(self):
         self.__traits = {}
-        for name in Traits.default:
+        for name in self.default:
             self.__traits[name] = Trait(name, float)
 
     def __getattr__(self, item):
@@ -196,12 +222,33 @@ class Traits:
         return t
 
 
+class Moods(Traits):
+    """
+    Moods are subject to constant change and should influence goals.
+    """
+    default = [
+        "happy",       # negative is depression
+        "hunger",      # negative requires food
+        "rest",        # negative requires sleep
+        "agitated",    # high values affect behaviour
+        "stress"       # high values affect behaviour
+    ]
+
+
+class Preferences:
+    """
+    Preferences are a map that determines the effects actions have on behaviour
+    """
+
+    pass
+
 class Human(GoapAgent):
     population = 0
 
     def __init__(self):
         super(Human, self).__init__()
         self.traits = Traits()
+        self.moods = Moods()
         self.sex = 0
         self.name = "Pathetic Human {} ({})".format(Human.population, self.sex)
         Human.population += 1
@@ -209,6 +256,7 @@ class Human(GoapAgent):
     def reset(self):
         self.sex = 0
         self.traits = Traits()
+        self.moods = Moods()
         self.goals = []
         self.abilities = []
         self.plan = []
@@ -223,12 +271,13 @@ class Human(GoapAgent):
         """
         self.name = "Pathetic Human {} ({})".format(Human.population, self.sex)
         if self.sex:
-            self.add_ability(CreateLifeAbility())
-            self.add_ability(GiveBirthAbility())
+            pass
+            #self.add_ability(CreateLifeAbility())
+            #self.add_ability(GiveBirthAbility())
 
         #self.add_ability(AgeAbility())
         self.add_ability(ConverseAbility())
-        self.add_ability(CopulateAbility())
+        #self.add_ability(CopulateAbility())
 
     def model_goals(self):
         """
@@ -240,8 +289,8 @@ class Human(GoapAgent):
             self.add_goal(baby_goal)
 
         if self.traits.chatty > 0:
-            friendly_goal = SimpleGoal(chatter=True)
-            self.add_goal(friendly_goal)
+            chatter_goal = SimpleGoal(chatter=True)
+            self.add_goal(chatter_goal)
 
         if self.traits.touchy > .50:
             copulate_goal = SimpleGoal(had_sex=True)

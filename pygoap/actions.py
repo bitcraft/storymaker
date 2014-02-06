@@ -18,6 +18,20 @@ class Ability:
         raise NotImplementedError
 
 
+class Action:
+    """
+    make a basic english sentence that describes a memory (precept)
+    """
+
+    def __init__(self, context, caller):
+        self.context = context
+        self.caller = caller
+        self.finished = False
+
+    def update(self, dt):
+        raise NotImplementedError
+
+
 class ActionContext:
     """
     Used by planner

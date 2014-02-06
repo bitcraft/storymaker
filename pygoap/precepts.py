@@ -16,3 +16,6 @@ DatumPrecept = nt('DatumPrecept', 'name, value')
 
 # used to remember "seeing" an action performed
 ActionPrecept = nt('ActionPrecept', 'entity, action, object')
+
+# used to remember spoken words
+SpeechPrecept = nt('SpeechPrecept', 'entity, message')

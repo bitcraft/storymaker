@@ -27,6 +27,13 @@ def make_english(caller, p):
             else:
                 return "I saw {} doing {} with {}!".format(p.entity.name, p.action, p.object)
 
+    elif isinstance(p, SpeechPrecept):
+        if p.entity is caller:
+            return 'I said "{}"'.format(p.message)
+
+        else:
+            return 'I heard {} say "{}"'.format(p.entity, p.message)
+
     elif isinstance(p, TimePrecept):
         return "The time is now {}.".format(p.time)
 

@@ -70,5 +70,8 @@ class Storyteller:
 
     def new_db(self):
         self.conn = None
-        os.unlink(self.db_fn)
+        try:
+            os.unlink(self.db_fn)
+        except FileNotFoundError:
+            pass
         self.init_db()
