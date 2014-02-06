@@ -159,15 +159,13 @@ class Environment(object):
                     print(precept.message)
 
                 if context.action.finished:
-                    raise StopIteration
+                    context.touch()
+                else:
+                    next_queue.append(context)
 
             except IndexError:                 # raised when queue is empty
                 self._context_queue = next_queue
                 break
-            except StopIteration:               # raised when action is finished
-                context.touch()
-            else:                               # action isn't finished, so re-add it to the queue
-                next_queue.append(context)
 
     def model_context(self, context):
         """
