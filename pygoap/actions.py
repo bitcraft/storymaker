@@ -3,11 +3,14 @@ import sys
 test_fail_msg = "some goal is returning None on a test, this is a bug."
 
 
+class ActionException(Exception):
+    pass
+
+
 class Ability:
     """
     Abilities evaluate a blackboard and generate actions for a agent to use.
     """
-
     provides = []
     requires = []
 
@@ -20,31 +23,41 @@ class Ability:
 
 class Action:
     """
-    make a basic english sentence that describes a memory (precept)
-
     duration should be at least 1.  if it is 0 (or less), then the agent will
     make a new plan on each precept during a time step.  this will kill
     performance and there seem to be no real advantages to this design.
     """
+    default_duration = 1
 
-    def __init__(self, context, caller):
-        self.context = context
-        self.caller = caller
-        self.duration = 1
+    def __init__(self):
+        self.duration = self.default_duration
+        self.last_update = None
+        self.context = None
         self.finished = False
 
-    def next(self, dt):
+    def next(self, now):
         """
         called by the environment.  do not override.  use update instead.
+        return a precept
         """
-        self.duration -= dt
-        if self.duration <= 0:
-            self.finished = True
+        if self.finished:
+            return None
 
-        if not self.finished:
-            return self.update(dt)
+        else:
+            if self.last_update is None:
+                self.last_update = now
+
+            if now - self.last_update >= self.duration:
+                self.finished = True
+                return None
+
+            else:
+                return self.update(now - self.last_update)
 
     def update(self, dt):
+        """
+        return a precept
+        """
         raise NotImplementedError
 
 
@@ -52,13 +65,12 @@ class ActionContext:
     """
     Used by planner
     """
-
-    def __init__(self, ability, caller, action, prereqs=None, effects=None, **kwargs):
+    def __init__(self, caller, action, prereqs=None, effects=None, **kwargs):
         self.__dict__.update(kwargs)
 
-        self.ability = ability
         self.caller = caller
         self.action = action
+        action.context = self
 
         self.prereqs = prereqs
         if self.prereqs is None: self.prereqs = []
@@ -80,7 +92,6 @@ class ActionContext:
         for many actions a simple 0 or 1 will work.  for actions which
         modify numerical values, it may be useful to return a fractional value.
         """
-
         if not self.prereqs:
             return 1.0
 
@@ -104,4 +115,4 @@ class ActionContext:
         [i.touch(memory) for i in self.effects]
 
     def __repr__(self):
-        return '<ActionContext: {}>'.format(self.ability.__class__.__name__)
+        return '<ActionContext: {}>'.format(self.action.__class__.__name__)

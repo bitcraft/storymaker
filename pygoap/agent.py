@@ -3,6 +3,7 @@ from pygoap.planning import plan
 from pygoap.memory import MemoryManager
 from pygoap.precepts import *
 import logging
+import threading
 
 debug = logging.debug
 
@@ -22,15 +23,16 @@ class GoapAgent(ObjectBase):
     currently, only one action running concurrently is supported.
     """
 
-    # this will set this class to listen for this type of precept
     # not implemented yet
-    interested = []
     idle_timeout = 30
 
     def __init__(self):
         super(GoapAgent, self).__init__()
         self.memory = MemoryManager()
         self.planner = plan
+
+        # if acquired, this lock will prevent this agent from planning
+        self.planning_lock = threading.Lock()
 
         self.current_goal = None
 
@@ -78,12 +80,16 @@ class GoapAgent(ObjectBase):
             if not isinstance(precept, TimePrecept):
                 self.memory.add(precept)
 
-        try:
-            return self.plan.pop()
-        except IndexError:
-            self.replan()
-            if self.plan:
-                return self.plan.pop()
+        # threads or the environment may lock the planner for performance or data
+        # integrity reasons.  if the planner is locked, then silently return []
+        if self.planning_lock.acquire(False):
+            a = self.running_actions()
+
+            if not a:
+                self.replan()
+
+            self.planning_lock.release()
+            return self.running_actions()
 
         return []
 
@@ -125,16 +131,18 @@ class GoapAgent(ObjectBase):
         """
         get the current action of the current plan
         """
-
         try:
             return self.plan[-1]
         except IndexError:
-            return NullAction
+            return []
 
-    @property
     def next_action(self):
         """
-        if the current action is finished, return the next
-        otherwise, return the current action
+        force the agent to stop the current action and start the next one
+
+        used by the environment.
         """
-        return self.current_action
+        try:
+            self.plan.pop(-1)
+        except IndexError:
+            pass

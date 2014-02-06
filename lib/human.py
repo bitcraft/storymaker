@@ -1,7 +1,7 @@
 __author__ = 'Leif'
 
-from pygoap.actions import *
 from pygoap.agent import GoapAgent
+from pygoap.actions import *
 from pygoap.goals import *
 from pygoap.precepts import *
 from lib.english import make_english
@@ -13,8 +13,8 @@ class AgeAbility(Ability):
     def get_contexts(self, caller, memory=None):
         effects = []
         prereqs = []
-        action = AgeAction(self, caller)
-        context = ActionContext(self, caller, action, prereqs, effects)
+        action = AgeAction()
+        context = ActionContext(caller, action, prereqs, effects)
         yield context
 
 
@@ -23,8 +23,8 @@ class AgeAction(Action):
     simulate human aging
     """
 
-    def __init__(self, *args, **kwargs):
-        super(AgeAction, self).__init__(*args, **kwargs)
+    def __init__(self, *arg, **kwarg):
+        super(AgeAction, self).__init__(*arg, **kwarg)
         self.age = 0
 
     def update(self, dt):
@@ -32,82 +32,57 @@ class AgeAction(Action):
 
 
 class GiveBirthAbility(Ability):
+    """
+    simulate birth
+    """
     def get_contexts(self, caller, memory=None):
         effects = [SimpleGoal(has_baby=True), SimpleGoal(ready_to_birth=False)]
         prereqs = [SimpleGoal(ready_to_birth=True)]
-        action = GiveBirthAction(self, caller)
-        context = ActionContext(self, caller, action, prereqs, effects)
+        action = GiveBirthAction()
+        context = ActionContext(caller, action, prereqs, effects)
         yield context
 
 
 class GiveBirthAction(Action):
-    """
-    simulate birth
-    """
-
     def update(self, dt):
-        self.finished = True
-        return ActionPrecept(self.caller, "birth", None)
+        return ActionPrecept(self.context.caller, "birth", None)
 
 
 class GestationAbility(Ability):
+    """
+    simulate child gestation
+    """
     def get_contexts(self, caller, memory=None):
         effects = [SimpleGoal(ready_to_birth=True)]
         prereqs = [SimpleGoal(had_sex=True)]
-        action = GestationAction(self, caller)
-        context = ActionContext(self, caller, action, prereqs, effects)
+        action = GestationAction()
+        context = ActionContext(caller, action, prereqs, effects)
         yield context
 
 
 class GestationAction(Action):
-    """
-    simulate child gestation
-    """
-
-    def __init__(self, *args, **kwargs):
-        super(GestationAction, self).__init__(*args, **kwargs)
-        self.ttl = 5
+    default_duration = 5
 
     def update(self, dt):
-        self.ttl -= dt
-        if self.ttl <= 0:
-            self.finished = True
+        pass
 
 
 class CopulateAbility(Ability):
-    def get_contexts(self, caller, memory=None):
-        effects = [SimpleGoal(had_sex=True)]
-        action = CopulateAction(self, caller)
-        context = ActionContext(self, caller, action, None, effects)
-        yield context
-
-
-class CopulateAction(Action):
     """
     simulate sex
 
     TODO: make it with a partner!
     """
+    def get_contexts(self, caller, memory=None):
+        effects = [SimpleGoal(had_sex=True)]
+        action = CopulateAction()
+        context = ActionContext(caller, action, None, effects)
+        yield context
 
+
+class CopulateAction(Action):
     def update(self, dt):
-        self.finished = True
-        return ActionPrecept(self.caller, "sex", None)
-
-
-class SpeakAction(Action):
-    """
-    make a basic english sentence that describes a memory (precept)
-    """
-
-    def __init__(self, context, caller, p):
-        super(SpeakAction, self).__init__(context, caller)
-        self.p = p
-
-    def update(self, dt):
-        msg = '[{}]\t\t{}'.format(self.caller.name, make_english(self.caller, self.p))
-        p = SpeechPrecept(self.caller, msg)
-        self.finished = True
-        return p
+        return ActionPrecept(self.context.caller, "sex", None)
 
 
 class SpeakAbility(Ability):
@@ -125,18 +100,29 @@ class SpeakAbility(Ability):
             p = random.choice(list(memory))
             if p not in self.perception_map[caller]:
                 effects = [SimpleGoal(chatter=True)]
-                action = speak_action(self, caller, p)
+                action = SpeakAction(self, caller, p)
 
                 # assume when speaking, all other actors will receive the message
                 self.perception_map[caller].append(p)
 
-                yield ActionContext(self, caller, action, None, effects)
+                yield ActionContext(caller, action, None, effects)
 
     def get_contexts(self, caller, memory=None):
         p = SpeechPrecept(caller, "context!!!{}".format(caller.name))
         effects = [SimpleGoal(chatter=True)]
-        action = SpeakAction(self, caller, p)
-        yield ActionContext(self, caller, action, None, effects)
+        action = SpeakAction(p)
+        yield ActionContext(caller, action, None, effects)
+
+
+class SpeakAction(Action):
+    def __init__(self, p, *arg, **kwarg):
+        super(SpeakAction, self).__init__(*arg, **kwarg)
+        self.p = p
+
+    def update(self, dt):
+        msg = '[{}]\t\t{}'.format(self.context.caller.name, make_english(self.context.caller, self.p))
+        p = SpeechPrecept(self.context.caller, msg)
+        return p
 
 
 class Trait:

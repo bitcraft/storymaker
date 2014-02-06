@@ -58,7 +58,7 @@ class Environment(object):
         self._agents = []
         self._entities = []
         self._positions = {}
-        self._context_queue = collections.deque()
+        self._context_queue = queue.Queue()
         self._precept_queue = queue.Queue()
 
     @property
@@ -103,7 +103,10 @@ class Environment(object):
             self._positions[entity] = (None, (0, 0))
 
             # clever hack to let the planner know who the memory belongs to
-            entity.process(DatumPrecept('self', entity))
+            # acquiring the planning lock here prevents the entity from forming a plan.
+            # this is ** required ** since we are not handling return actions here.
+            with entity.planning_lock:
+                entity.process(DatumPrecept('self', entity))
         else:
             self._entities.append(entity)
 
@@ -121,10 +124,10 @@ class Environment(object):
         # let all the agents know that time has passed
         t_precept = TimePrecept(self.time)
 
-        # speedier version of broadcast_precepts() that just sends out time precepts
+        # speedier version of broadcast_precepts(); just send out time precepts
         for agent in self.agents:
-            for action in agent.process(t_precept):
-                self._context_queue.appendleft(action)
+            for context in agent.process(t_precept):
+                self._context_queue.put(context)
 
         self.handle_precepts()
         self.handle_actions(td)
@@ -148,25 +151,36 @@ class Environment(object):
         process all of the actions in the queue
         """
 
-        next_queue = collections.deque()
+        next_queue = queue.Queue()
+        touched = []
         while 1:
             try:
-                context = self._context_queue.pop()
-                precept = context.action.next(td)
-                self._precept_queue.put(precept)
+                context = self._context_queue.get(False)
 
-                if isinstance(precept, SpeechPrecept):
-                    print(precept.message)
-
-                if context.action.finished:
-                    print("{} finished".format(context))
-                    context.touch()
-                else:
-                    next_queue.appendleft(context)
-
-            except IndexError:                 # raised when queue is empty
+            except queue.Empty:
                 self._context_queue = next_queue
                 break
+
+            else:
+                if context in touched or context.action.finished:
+                    continue
+
+                print("{} doing {}".format(context.caller, context))
+                precept = context.action.next(self.time)
+                if precept:
+                    self._precept_queue.put(precept)
+
+                if context.action.finished:
+                    #print("{} {} finished".format(context.caller, context))
+                    touched.append(context)
+                    context.touch()
+                    context.caller.next_action()
+                    for action in context.caller.current_action:
+                        self._context_queue.put(action)
+
+                else:
+                    next_queue.put(context)
+
 
     def model_context(self, context):
         """
@@ -181,7 +195,7 @@ class Environment(object):
         """
         model_precept = self.model_precept
         model_context = self.model_context
-        enqueue_context = self._context_queue.appendleft
+        enqueue_context = self._context_queue.put
 
         for p in precepts:
             for agent in self._agents:
