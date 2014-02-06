@@ -44,6 +44,15 @@ class GoapAgent(ObjectBase):
         # this special filter will prevent time precepts from being stored
         #self.filters.append(time_filter)
 
+    def reset(self):
+        self.memory = MemoryManager()
+        self.planner = plan
+        self.current_goal = None
+        self.goals = []
+        self.filters = []
+        self.abilities = []
+        self.plan = []
+
     def add_goal(self, goal):
         self.goals.append(goal)
 
@@ -61,21 +70,19 @@ class GoapAgent(ObjectBase):
         precepts can be put through filters to change them.
         this can be used to simulate errors in judgement by the agent.
         """
-        for f in self.filters:
-            precept = f(precept)
-            if precept is None:
-                break
 
-        return precept
+        r = []
+        for f in self.filters:
+            r.extend(f(self, precept))
+
+        return r
 
     def process(self, precept):
         """
         used by the environment to feed the agent precepts.
         agents can respond by sending back an action to take.
         """
-        precept = self.filter_precept(precept)
-
-        if precept:
+        for precept in self.filter_precept(precept):
             debug("[agent] %s recv'd precept %s", self, precept)
             if not isinstance(precept, TimePrecept):
                 self.memory.add(precept)

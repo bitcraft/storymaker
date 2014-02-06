@@ -5,6 +5,8 @@ from pygoap.actions import *
 from pygoap.goals import *
 from pygoap.precepts import *
 from lib.english import make_english
+from lib.society import *
+from lib.traits import *
 from collections import defaultdict
 import random
 
@@ -125,101 +127,70 @@ class SpeakAction(Action):
         return p
 
 
-class Trait:
-    def __init__(self, name, kind):
-        self.name = name
-        self.value = kind()
-
-    def __eq__(self, other):
-        return self.value == other
-
-    def __gt__(self, other):
-        return self.value > other
-
-    def __lt__(self, other):
-        return self.value < other
-
-
-class Traits:
-    """
-    Traits are generally not modified, and goals should not normally be
-    triggered by changes or the state of a trait.
-    """
-    default = [
-        "strength",
-        "perception",
-        "endurance",
-        "charisma",
-        "intelligence",
-        "agility",
-        "luck",
-        "chatty",
-        "morality",
-        "tradition",
-        "alignment",
-        "touchy",
-        "esteem",
-        "karma",
-        "report"
-    ]
-
-    def __init__(self):
-        self.__traits = {}
-        for name in self.default:
-            self.__traits[name] = Trait(name, float)
-
-    def __getattr__(self, item):
-        try:
-            return self.__traits[item]
-        except KeyError:
-            raise AttributeError
-
-    @classmethod
-    def random(cls):
-        t = cls()
-        for key, value in t.__traits.items():
-            t.__traits[key].value = random.random()
-        return t
-
-
-class Moods(Traits):
-    """
-    Moods are subject to constant change and should influence goals.
-    """
-    default = [
-        "happy",       # negative is depression
-        "hunger",      # negative requires food
-        "rest",        # negative requires sleep
-        "agitated",    # high values affect behaviour
-        "stress"       # high values affect behaviour
-    ]
-
-
 class Preferences:
     """
     Preferences are a map that determines the effects actions have on behaviour
     """
-
     pass
 
+
+# filters should modify the agent's traits or mood
+def copulate_filter(agent, p):
+    try:
+        assert(isinstance(p, ActionPrecept))
+        assert(p.entity is agent)
+    except AssertionError:
+        return p
+
+    r = [p]
+
+    if p.action == "sex":
+        value = .25
+        p = MoodPrecept(agent, 'content', value)
+        r.append(p)
+        print(agent, value)
+
+    return r
+
+
 class Human(GoapAgent):
+    mood_names = (
+        "content",     # low values cause agent to seek another activity
+        "hunger",      # negative requires food
+        "rested",      # negative requires sleep
+        "agitated",    # high values affect behaviour
+        "stress",      # high values affect behaviour
+        "overload",    # high values affect behaviour
+    )
+
     population = 0
 
-    def __init__(self):
+    def __init__(self, **kwarg):
         super(Human, self).__init__()
         self.traits = Traits()
-        self.moods = Moods()
-        self.sex = 0
-        self.name = "Pathetic Human {} ({})".format(Human.population, self.sex)
+        self.sex = kwarg.get("sex", 0)
+
+        name = kwarg.get("name", None)
+        if not name:
+            name = "Pathetic Human {} ({})".format(Human.population, self.sex)
+        self.name = name
+
+        self.reset_moods()
+
         Human.population += 1
 
+    def reset_moods(self):
+        with self.planning_lock:
+            for name in Human.mood_names:
+                p = MoodPrecept(self, name, float())
+                self.process(p)
+
     def reset(self):
-        self.sex = 0
+        super(Human, self).reset()
         self.traits = Traits()
-        self.moods = Moods()
-        self.goals = []
-        self.abilities = []
-        self.plan = []
+        self.sex = 0
+        self.reset_moods()
+        self.model()
 
     def model(self):
         self.model_abilities()
@@ -229,7 +200,6 @@ class Human(GoapAgent):
         """
         add abilities that are inherent to humans
         """
-        self.name = "Pathetic Human {} ({})".format(Human.population, self.sex)
         if self.sex:
             self.add_ability(GestationAbility())
             self.add_ability(GiveBirthAbility())
@@ -237,6 +207,8 @@ class Human(GoapAgent):
         self.add_ability(AgeAbility())
         self.add_ability(SpeakAbility())
         self.add_ability(CopulateAbility())
+
+        self.filters.append(copulate_filter)
 
     def model_goals(self):
         """

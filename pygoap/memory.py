@@ -8,7 +8,7 @@ class MemoryManager(set):
     Store and manage precepts.
     """
 
-    max_size = 7
+    max_size = 20
 
     def add(self, other):
         if len(self) > MemoryManager.max_size:
