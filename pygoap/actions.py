@@ -31,28 +31,30 @@ class Action:
 
     def __init__(self):
         self.duration = self.default_duration
-        self.last_update = None
+        self.first_update = None
         self.context = None
         self.finished = False
+        self.last_update = False
 
     def next(self, now):
         """
         called by the environment.  do not override.  use update instead.
         return a precept
         """
-        if self.finished:
+        if self.finished or self.last_update == now:
             return None
 
         else:
-            if self.last_update is None:
-                self.last_update = now
+            if self.first_update is None:
+                self.first_update = now
 
-            if now - self.last_update >= self.duration:
+            if now - self.first_update >= self.duration:
                 self.finished = True
                 return None
 
             else:
-                return self.update(now - self.last_update)
+                self.last_update = now
+                return self.update(now - self.first_update)
 
     def update(self, dt):
         """
