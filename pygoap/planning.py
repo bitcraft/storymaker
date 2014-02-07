@@ -84,7 +84,7 @@ def plan(parent, contexts, start_action, start_memory, goal):
     key_node = PlanningNode(None, None, start_action, start_memory)
     heap_index = 0
     open_list = [(0, heap_index, key_node)]
-    closed_list = []
+    closed_list = set()
 
     debug("[plan] solve %s starting from %s", goal, start_action)
     debug("[plan] memory supplied is %s", start_memory)
@@ -96,7 +96,7 @@ def plan(parent, contexts, start_action, start_memory, goal):
             debug("[plan] successful %s", key_node.context.action)
             break
 
-        closed_list.append(key_node)
+        closed_list.add(key_node)
         for child in get_children(parent, key_node, contexts):
             if child in closed_list:
                 continue
