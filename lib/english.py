@@ -1,6 +1,7 @@
 __author__ = 'Leif'
 
 from pygoap.precepts import *
+from collections import namedtuple as nt
 
 
 def make_english(caller, p):
@@ -13,7 +14,7 @@ def make_english(caller, p):
         if p.name == "self":
             return "My name is {}.".format(p.value.name)
 
-        return "I am {} {}!".format(p.name, p.value)
+        return "Did you know that {} is {}?".format(p.name, p.value)
 
     elif isinstance(p, ActionPrecept):
         if p.entity is caller:
@@ -32,10 +33,17 @@ def make_english(caller, p):
             return 'I said "{}"'.format(p.message)
 
         else:
-            return 'I heard {} say "{}"'.format(p.entity, p.message)
+            return 'I heard {} say "{}"'.format(p.entity.name, p.message)
 
     elif isinstance(p, TimePrecept):
         return "The time is now {}.".format(p.time)
+
+    elif isinstance(p, MoodPrecept):
+        if p.entity is caller:
+            return 'My {} feelings are "{}"'.format(p.name, p.value)
+
+        else:
+            return '{}\'s {} feelings are "{}"'.format(p.entity, p.name, p.value)
 
     else:
         return "I don't know how to express [{}].".format(p)

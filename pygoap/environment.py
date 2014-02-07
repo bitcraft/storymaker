@@ -165,7 +165,7 @@ class Environment(object):
                 if context in touched or context.action.finished:
                     continue
 
-                print("{} doing {}".format(context.caller, context))
+                #print("{} doing {}".format(context.caller, context))
                 precept = context.action.next(self.time)
                 if precept:
                     self._precept_queue.put(precept)
@@ -198,11 +198,19 @@ class Environment(object):
         enqueue_context = self._context_queue.put
 
         for p in precepts:
+
+            self.broadcast_hook(p)
+
             for agent in self._agents:
                 for context in agent.process(model_precept(p, agent)):
                     context = model_context(context)
                     if context:
                         enqueue_context(context)
+
+    def broadcast_hook(self, p):
+        if isinstance(p, SpeechPrecept):
+            msg = '{:>12} {}'.format('{}:'.format(p.entity.name), p.message)
+            print(msg)
 
     def model_precept(self, precept, other):
         """

@@ -97,19 +97,19 @@ class SpeakAbility(Ability):
         super(SpeakAbility, self).__init__()
         self.perception_map = defaultdict(list)
 
-    def get_contexts_(self, caller, memory=None):
+    def get_contexts(self, caller, memory=None):
         if memory is not None:
             p = random.choice(list(memory))
             if p not in self.perception_map[caller]:
                 effects = [SimpleGoal(chatter=True)]
-                action = SpeakAction(self, caller, p)
+                action = SpeakAction(p)
 
                 # assume when speaking, all other actors will receive the message
                 self.perception_map[caller].append(p)
 
                 yield ActionContext(caller, action, None, effects)
 
-    def get_contexts(self, caller, memory=None):
+    def _get_contexts(self, caller, memory=None):
         p = SpeechPrecept(caller, "context!!!{}".format(caller.name))
         effects = [SimpleGoal(chatter=True)]
         action = SpeakAction(p)
@@ -122,7 +122,7 @@ class SpeakAction(Action):
         self.p = p
 
     def update(self, dt):
-        msg = '[{}]\t\t{}'.format(self.context.caller.name, make_english(self.context.caller, self.p))
+        msg = make_english(self.context.caller, self.p)
         p = SpeechPrecept(self.context.caller, msg)
         return p
 
@@ -140,15 +140,25 @@ def copulate_filter(agent, p):
         assert(isinstance(p, ActionPrecept))
         assert(p.entity is agent)
     except AssertionError:
-        return p
+        return [p]
 
     r = [p]
 
+    value = 0
+
+    to_remove = []
+    for mp in agent.memory.of_class(MoodPrecept):
+        if mp.entity is agent and mp.name == 'content':
+            value += mp.value
+            to_remove.append(mp)
+
+    for mp in to_remove:
+        agent.memory.remove(mp)
+
     if p.action == "sex":
-        value = .25
+        value += .01
         p = MoodPrecept(agent, 'content', value)
         r.append(p)
-        print(agent, value)
 
     return r
 
@@ -219,13 +229,13 @@ class Human(GoapAgent):
             baby_goal = SimpleGoal(has_baby=True)
             self.add_goal(baby_goal)
 
-        if self.traits.chatty > 0:
-            chatter_goal = SimpleGoal(chatter=True)
-            self.add_goal(chatter_goal)
-
         if self.traits.touchy > .50:
             copulate_goal = SimpleGoal(had_sex=True)
             self.add_goal(copulate_goal)
+
+        if self.traits.chatty > 0:
+            chatter_goal = SimpleGoal(chatter=True)
+            self.add_goal(chatter_goal)
 
     def birth(self):
         pass
