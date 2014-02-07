@@ -36,9 +36,9 @@ class GoapAgent(ObjectBase):
 
         self.current_goal = None
 
-        self.goals = []             # all goals this instance can use
+        self.goals = set()          # all goals this instance can use
+        self.abilities = set()        # all actions this agent can perform (defined by action contexts!)
         self.filters = []           # list of methods to use as a filter
-        self.abilities = []         # all actions this agent can perform (defined by action contexts!)
         self.plan = []              # list of actions to perform
 
         # this special filter will prevent time precepts from being stored
@@ -48,22 +48,10 @@ class GoapAgent(ObjectBase):
         self.memory = MemoryManager()
         self.planner = plan
         self.current_goal = None
-        self.goals = []
+        self.goals = set()
+        self.abilities = set()
         self.filters = []
-        self.abilities = []
         self.plan = []
-
-    def add_goal(self, goal):
-        self.goals.append(goal)
-
-    def remove_goal(self, goal):
-        self.goals.remove(goal)
-
-    def add_ability(self, action):
-        self.abilities.append(action)
-
-    def remove_ability(self, action):
-        self.abilities.remove(action)
 
     def filter_precept(self, precept):
         """

@@ -211,12 +211,12 @@ class Human(GoapAgent):
         add abilities that are inherent to humans
         """
         if self.sex:
-            self.add_ability(GestationAbility())
-            self.add_ability(GiveBirthAbility())
+            self.abilities.add(GestationAbility())
+            self.abilities.add(GiveBirthAbility())
 
-        self.add_ability(AgeAbility())
-        self.add_ability(SpeakAbility())
-        self.add_ability(CopulateAbility())
+        self.abilities.add(AgeAbility())
+        self.abilities.add(SpeakAbility())
+        self.abilities.add(CopulateAbility())
 
         self.filters.append(copulate_filter)
 
@@ -227,15 +227,15 @@ class Human(GoapAgent):
 
         if self.sex:
             baby_goal = SimpleGoal(self, has_baby=True)
-            self.add_goal(baby_goal)
+            self.goals.add(baby_goal)
 
         if self.traits.touchy > .50:
             copulate_goal = SimpleGoal(self, had_sex=True)
-            self.add_goal(copulate_goal)
+            self.goals.add(copulate_goal)
 
         if self.traits.chatty > 0:
             chatter_goal = SimpleGoal(self, chatter=True)
-            self.add_goal(chatter_goal)
+            self.goals.add(chatter_goal)
 
     def birth(self):
         pass
