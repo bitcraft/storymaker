@@ -3,6 +3,13 @@ __author__ = 'Leif'
 from pygoap.precepts import *
 
 
+def try_name(p):
+    try:
+        return p.value.name
+    except AttributeError:
+        return p.value
+
+
 def make_english(caller, p):
     """
     create an english phrase from a precept
@@ -15,16 +22,16 @@ def make_english(caller, p):
             if p.name == "name":
                 return "My name is {}.".format(p.value)
 
-            return "I {} is {}.".format(p.name, p.value)
+            return "I {} is {}.".format(p.name, try_name(p))
 
         elif p.entity is None:
-            return "Did you know that {} is {}?".format(p.name, p.value)
+            return "Did you know that {} is {}?".format(p.name, try_name(p))
 
         else:
             if p.name == "name":
                 return "His name is {}.".format(p.value)
 
-            return "Did you know that {}\'s {} is {}?".format(p.entity, p.name, p.value)
+            return "Did you know that {}\'s {} is {}?".format(p.entity, p.name, try_name(p))
 
     elif isinstance(p, ActionPrecept):
         if p.entity is caller:
