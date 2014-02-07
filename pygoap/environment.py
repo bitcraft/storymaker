@@ -106,7 +106,7 @@ class Environment(object):
             # acquiring the planning lock here prevents the entity from forming a plan.
             # this is ** required ** since we are not handling return actions here.
             with entity.planning_lock:
-                entity.process(DatumPrecept('self', entity))
+                entity.process(DatumPrecept(entity, 'name', entity.name))
         else:
             self._entities.append(entity)
 

@@ -38,8 +38,8 @@ class GiveBirthAbility(Ability):
     simulate birth
     """
     def get_contexts(self, caller, memory=None):
-        effects = [SimpleGoal(has_baby=True), SimpleGoal(ready_to_birth=False)]
-        prereqs = [SimpleGoal(ready_to_birth=True)]
+        effects = [SimpleGoal(caller, has_baby=True), SimpleGoal(caller, ready_to_birth=False)]
+        prereqs = [SimpleGoal(caller, ready_to_birth=True)]
         action = GiveBirthAction()
         context = ActionContext(caller, action, prereqs, effects)
         yield context
@@ -55,8 +55,8 @@ class GestationAbility(Ability):
     simulate child gestation
     """
     def get_contexts(self, caller, memory=None):
-        effects = [SimpleGoal(ready_to_birth=True)]
-        prereqs = [SimpleGoal(had_sex=True)]
+        effects = [SimpleGoal(caller, ready_to_birth=True)]
+        prereqs = [SimpleGoal(caller, had_sex=True)]
         action = GestationAction()
         context = ActionContext(caller, action, prereqs, effects)
         yield context
@@ -76,7 +76,7 @@ class CopulateAbility(Ability):
     TODO: make it with a partner!
     """
     def get_contexts(self, caller, memory=None):
-        effects = [SimpleGoal(had_sex=True)]
+        effects = [SimpleGoal(caller, had_sex=True)]
         action = CopulateAction()
         context = ActionContext(caller, action, None, effects)
         yield context
@@ -101,7 +101,7 @@ class SpeakAbility(Ability):
         if memory is not None:
             p = random.choice(list(memory))
             if p not in self.perception_map[caller]:
-                effects = [SimpleGoal(chatter=True)]
+                effects = [SimpleGoal(caller, chatter=True)]
                 action = SpeakAction(p)
 
                 # assume when speaking, all other actors will receive the message
@@ -111,7 +111,7 @@ class SpeakAbility(Ability):
 
     def _get_contexts(self, caller, memory=None):
         p = SpeechPrecept(caller, "context!!!{}".format(caller.name))
-        effects = [SimpleGoal(chatter=True)]
+        effects = [SimpleGoal(caller, chatter=True)]
         action = SpeakAction(p)
         yield ActionContext(caller, action, None, effects)
 
@@ -226,15 +226,15 @@ class Human(GoapAgent):
         """
 
         if self.sex:
-            baby_goal = SimpleGoal(has_baby=True)
+            baby_goal = SimpleGoal(self, has_baby=True)
             self.add_goal(baby_goal)
 
         if self.traits.touchy > .50:
-            copulate_goal = SimpleGoal(had_sex=True)
+            copulate_goal = SimpleGoal(self, had_sex=True)
             self.add_goal(copulate_goal)
 
         if self.traits.chatty > 0:
-            chatter_goal = SimpleGoal(chatter=True)
+            chatter_goal = SimpleGoal(self, chatter=True)
             self.add_goal(chatter_goal)
 
     def birth(self):

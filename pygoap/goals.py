@@ -68,6 +68,7 @@ class GoalBase:
         """
         memory = MemoryManager()
         self.touch(memory)
+        print(memory)
         assert not self.test(memory) == 0
 
     def __repr__(self):
@@ -77,15 +78,15 @@ class GoalBase:
 class SimpleGoal(GoalBase):
     def test(self, memory):
         total = 0.0
-        for precept in memory:
+        for precept in memory.of_class(DatumPrecept):
             for item in self.kw.items():
-                if precept == item:
+                if (precept.name, precept.value) == item:
                     total += 1
         return total / len(self.kw)
 
     def touch(self, memory):
         for item in self.kw.items():
-            memory.add(DatumPrecept(*item))
+            memory.add(DatumPrecept(self.args[0], *item))
 
     def __repr__(self):
         return "<{}=\"{}\">".format(self.__class__.__name__, self.kw)

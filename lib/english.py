@@ -1,20 +1,30 @@
 __author__ = 'Leif'
 
 from pygoap.precepts import *
-from collections import namedtuple as nt
 
 
 def make_english(caller, p):
     """
     create an english phrase from a precept
+    very simple!!
     :rtype : str
     """
 
     if isinstance(p, DatumPrecept):
-        if p.name == "self":
-            return "My name is {}.".format(p.value.name)
+        if p.entity is caller:
+            if p.name == "name":
+                return "My name is {}.".format(p.value)
 
-        return "Did you know that {} is {}?".format(p.name, p.value)
+            return "I {} is {}.".format(p.name, p.value)
+
+        elif p.entity is None:
+            return "Did you know that {} is {}?".format(p.name, p.value)
+
+        else:
+            if p.name == "name":
+                return "His name is {}.".format(p.value)
+
+            return "Did you know that {}\'s {} is {}?".format(p.entity, p.name, p.value)
 
     elif isinstance(p, ActionPrecept):
         if p.entity is caller:

@@ -12,7 +12,7 @@ PositionPrecept = nt('PositionPrecept', 'entity, position')
 TimePrecept = nt('TimePrecept', 'time')
 
 # used to remember a single piece of data
-DatumPrecept = nt('DatumPrecept', 'name, value')
+DatumPrecept = nt('DatumPrecept', 'entity, name, value')
 
 # used to remember "seeing" an action performed
 ActionPrecept = nt('ActionPrecept', 'entity, action, object')
