@@ -17,7 +17,6 @@ import collections
 debug = logging.debug
 
 
-
 class ObjectBase(object):
     """
     class for objects that agents can interact with

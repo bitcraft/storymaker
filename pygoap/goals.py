@@ -47,10 +47,10 @@ class GoalBase:
         self.kw = kwargs
 
     def touch(self, memory):
-        pass
+        raise NotImplementedError
 
     def test(self, memory):
-        pass
+        raise NotImplementedError
 
     def get_relevancy(self, memory):
         """
@@ -86,6 +86,8 @@ class SimpleGoal(GoalBase):
 
     def touch(self, memory):
         for item in self.kw.items():
+            p = DatumPrecept(self.args[0], *item)
+            print(p)
             memory.add(DatumPrecept(self.args[0], *item))
 
     def __repr__(self):

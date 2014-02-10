@@ -109,12 +109,6 @@ class SpeakAbility(Ability):
 
                 yield ActionContext(caller, action, None, effects)
 
-    def _get_contexts(self, caller, memory=None):
-        p = SpeechPrecept(caller, "context!!!{}".format(caller.name))
-        effects = [SimpleGoal(caller, chatter=True)]
-        action = SpeakAction(p)
-        yield ActionContext(caller, action, None, effects)
-
 
 class SpeakAction(Action):
     def __init__(self, p, *arg, **kwarg):
