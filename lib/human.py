@@ -91,9 +91,10 @@ class CopulateAction(Action):
 class SpeakAbility(Ability):
     """
     examine caller's memory and create some things to say
-    """
 
-    # this will be moved in to another class someday
+    any agent who "hears" the action will have the precept added to their memory
+    """
+    # perception will be moved in to another class someday
     def __init__(self):
         super(SpeakAbility, self).__init__()
         self.perception_map = defaultdict(list)
@@ -102,7 +103,8 @@ class SpeakAbility(Ability):
         if memory is not None:
             p = random.choice(list(memory))
             if p not in self.perception_map[caller]:
-                effects = [PreceptGoal(DatumPrecept(caller, "chatter", True))]
+                effects = [PreceptGoal(p),
+                           PreceptGoal(DatumPrecept(caller, "chatter", True))]
                 action = SpeakAction(p)
 
                 # assume when speaking, all other actors will receive the message
@@ -112,6 +114,10 @@ class SpeakAbility(Ability):
 
 
 class SpeakAction(Action):
+    """
+    communicate a precept
+    """
+
     def __init__(self, p, *arg, **kwarg):
         super(SpeakAction, self).__init__(*arg, **kwarg)
         self.p = p

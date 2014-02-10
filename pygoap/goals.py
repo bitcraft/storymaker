@@ -106,7 +106,8 @@ class PreceptGoal(GoalBase):
         super(PreceptGoal, self).__init__(*args, **kwargs)
         assert (len(self.args) > 0)
         for a in self.args:
-            assert (isinstance(a, DatumPrecept))
+            assert (
+            isinstance(a, (PositionPrecept, TimePrecept, DatumPrecept, ActionPrecept, SpeechPrecept, MoodPrecept)))
 
     def test(self, memory):
         total = 0.0
