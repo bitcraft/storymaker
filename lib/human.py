@@ -38,8 +38,9 @@ class GiveBirthAbility(Ability):
     simulate birth
     """
     def get_contexts(self, caller, memory=None):
-        effects = [SimpleGoal(caller, has_baby=True), SimpleGoal(caller, ready_to_birth=False)]
-        prereqs = [SimpleGoal(caller, ready_to_birth=True)]
+        effects = [PreceptGoal(DatumPrecept(caller, "has_baby", True)),
+                   PreceptGoal(DatumPrecept(caller, "ready_to_birth", False))]
+        prereqs = [PreceptGoal(DatumPrecept(caller, "ready_to_birth", True))]
         action = GiveBirthAction()
         context = ActionContext(caller, action, prereqs, effects)
         yield context
@@ -55,8 +56,8 @@ class GestationAbility(Ability):
     simulate child gestation
     """
     def get_contexts(self, caller, memory=None):
-        effects = [SimpleGoal(caller, ready_to_birth=True)]
-        prereqs = [SimpleGoal(caller, had_sex=True)]
+        effects = [PreceptGoal(DatumPrecept(caller, "ready_to_birth", True))]
+        prereqs = [PreceptGoal(DatumPrecept(caller, "had_sex", True))]
         action = GestationAction()
         context = ActionContext(caller, action, prereqs, effects)
         yield context
@@ -76,7 +77,7 @@ class CopulateAbility(Ability):
     TODO: make it with a partner!
     """
     def get_contexts(self, caller, memory=None):
-        effects = [SimpleGoal(caller, had_sex=True)]
+        effects = [PreceptGoal(DatumPrecept(caller, "had_sex", True))]
         action = CopulateAction()
         context = ActionContext(caller, action, None, effects)
         yield context
@@ -101,7 +102,7 @@ class SpeakAbility(Ability):
         if memory is not None:
             p = random.choice(list(memory))
             if p not in self.perception_map[caller]:
-                effects = [SimpleGoal(caller, chatter=True)]
+                effects = [PreceptGoal(DatumPrecept(caller, "chatter", True))]
                 action = SpeakAction(p)
 
                 # assume when speaking, all other actors will receive the message
@@ -220,15 +221,15 @@ class Human(GoapAgent):
         """
 
         if self.sex:
-            baby_goal = SimpleGoal(self, has_baby=True)
+            baby_goal = PreceptGoal(DatumPrecept(self, "has_baby", True))
             self.goals.add(baby_goal)
 
         if self.traits.touchy > .50:
-            copulate_goal = SimpleGoal(self, had_sex=True)
+            copulate_goal = PreceptGoal(DatumPrecept(self, "had_sex", True))
             self.goals.add(copulate_goal)
 
         if self.traits.chatty > 0:
-            chatter_goal = SimpleGoal(self, chatter=True)
+            chatter_goal = PreceptGoal(DatumPrecept(self, "chatter", True))
             self.goals.add(chatter_goal)
 
     def birth(self):

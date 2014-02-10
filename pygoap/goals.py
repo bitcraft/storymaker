@@ -76,6 +76,10 @@ class GoalBase:
 
 
 class SimpleGoal(GoalBase):
+    """
+    Shorthand for creating simple DatumPrecept Goals
+    """
+
     def test(self, memory):
         total = 0.0
         for precept in memory.of_class(DatumPrecept):
@@ -87,11 +91,32 @@ class SimpleGoal(GoalBase):
     def touch(self, memory):
         for item in self.kw.items():
             p = DatumPrecept(self.args[0], *item)
-            print(p)
             memory.add(DatumPrecept(self.args[0], *item))
 
     def __repr__(self):
         return "<{}=\"{}\">".format(self.__class__.__name__, self.kw)
+
+
+class PreceptGoal(GoalBase):
+    """
+    Uses DatumPrecepts as a test
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(PreceptGoal, self).__init__(*args, **kwargs)
+        assert (len(self.args) > 0)
+        for a in self.args:
+            assert (isinstance(a, DatumPrecept))
+
+    def test(self, memory):
+        total = 0.0
+        for precept in memory.of_class(DatumPrecept):
+            if precept in self.args:
+                total += 1
+        return total / len(self.args)
+
+    def touch(self, memory):
+        memory.update(self.args)
 
 
 class EvalGoal(GoalBase):
