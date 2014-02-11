@@ -18,7 +18,7 @@ DatumPrecept = nt('DatumPrecept', 'entity, name, value')
 ActionPrecept = nt('ActionPrecept', 'entity, action, object')
 
 # used to remember spoken words
-SpeechPrecept = nt('SpeechPrecept', 'entity, message')
+SpeechPrecept = nt('SpeechPrecept', 'entity, message, precept')
 
 # used to store moods
 MoodPrecept = nt('MoodPrecept', 'entity, name, value')

@@ -11,6 +11,16 @@ from collections import defaultdict
 import random
 
 
+# get all known entities at this point
+# do this by checking for "name" DatumPrecepts
+def get_known_agents(agent):
+    for p in agent.memory.of_class(DatumPrecept):
+        if p.name == "name":
+            #print(p.entity, agent)
+            if p.entity is not agent:
+                yield p
+
+
 class AgeAbility(Ability):
     def get_contexts(self, caller, memory=None):
         effects = []
@@ -77,15 +87,18 @@ class CopulateAbility(Ability):
     TODO: make it with a partner!
     """
     def get_contexts(self, caller, memory=None):
-        effects = [PreceptGoal(DatumPrecept(caller, "had_sex", True))]
-        action = CopulateAction()
-        context = ActionContext(caller, action, None, effects)
-        yield context
+        for agent in get_known_agents(caller):
+            #print("sex", caller, agent)
+            if not agent.sex == caller.sex:
+                effects = [PreceptGoal(DatumPrecept(caller, "had_sex", True))]
+                action = CopulateAction()
+                context = ActionContext(caller, action, None, effects)
+                yield context
 
 
 class CopulateAction(Action):
     def update(self, dt):
-        return ActionPrecept(self.context.caller, "sex", None)
+        yield ActionPrecept(self.context.caller, "sex", None)
 
 
 class SpeakAbility(Ability):
@@ -121,11 +134,13 @@ class SpeakAction(Action):
     def __init__(self, p, *arg, **kwarg):
         super(SpeakAction, self).__init__(*arg, **kwarg)
         self.p = p
+        self._sp = None
 
     def update(self, dt):
-        msg = make_english(self.context.caller, self.p)
-        p = SpeechPrecept(self.context.caller, msg)
-        return p
+        if self._sp is None:
+            msg = make_english(self.context.caller, self.p)
+            self._sp = SpeechPrecept(self.context.caller, msg, self.p)
+        yield self._sp
 
 
 class Preferences:

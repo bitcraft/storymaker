@@ -6,18 +6,7 @@ debug = logging.debug
 
 
 def get_children(parent0, parent, abilities):
-    """
-    def get_used_class(node):
-        while node.parent is not None:
-            yield node.context
-            node = node.parent
-
-    used_class = set(get_used_class(parent))
-    """
     for ability in abilities:
-        #if context in used_class:
-        #    continue
-
         for context in ability.get_contexts(parent0, parent.memory):
             if context.test(parent.memory) > 0.0:
                 yield PlanningNode(parent, ability, context)
@@ -27,7 +16,7 @@ def calc_g(node):
     cost = node.cost
     while not node.parent is None:
         node = node.parent
-        cost += node.cost 
+        cost += node.cost
     return cost
 
 
@@ -62,14 +51,14 @@ class PlanningNode(object):
     def __repr__(self):
         if self.parent:
             return "<PlanningNode: '%s', cost: %s, p: %s>" % \
-            (self.context.__class__.__name__,
-                self.cost,
-                self.parent.action.__class__.__name__)
+                   (self.context.__class__.__name__,
+                    self.cost,
+                    self.parent.action.__class__.__name__)
 
         else:
             return "<PlanningNode: '%s', cost: %s, p: None>" % \
-            (self.context.__class__.__name__,
-                self.cost)
+                   (self.context.__class__.__name__,
+                    self.cost)
 
 
 def plan(parent, contexts, start_action, start_memory, goal):
@@ -117,6 +106,6 @@ def plan(parent, contexts, start_action, start_memory, goal):
     while key_node.parent is not None:
         key_node = key_node.parent
         path.append([key_node.context])
-    #return list(reversed(path))
+        #return list(reversed(path))
     return path
 

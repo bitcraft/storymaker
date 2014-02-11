@@ -165,8 +165,7 @@ class Environment(object):
                     continue
 
                 #print("{} doing {}".format(context.caller, context))
-                precept = context.action.next(self.time)
-                if precept:
+                for precept in context.action.next(self.time):
                     self._precept_queue.put(precept)
 
                 if context.action.finished:
