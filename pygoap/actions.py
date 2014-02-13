@@ -9,7 +9,7 @@ class ActionException(Exception):
 
 class Ability:
     """
-    Abilities evaluate a blackboard and generate actions for a agent to use.
+    Abilities evaluate a blackboard and generate actions for an agent to use.
     """
     provides = []
     requires = []
@@ -25,7 +25,7 @@ class Action:
     """
     duration should be at least 1.  if it is 0 (or less), then the agent will
     make a new plan on each precept during a time step.  this will kill
-    performance and there seem to be no real advantages to this design.
+    performance and there seems to be no real advantages to this design.
     """
     default_duration = 1
 
