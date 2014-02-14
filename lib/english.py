@@ -5,9 +5,9 @@ from pygoap.precepts import *
 
 def try_name(p):
     try:
-        return p.value.name
+        return p.name
     except AttributeError:
-        return p.value
+        return p
 
 
 def make_english(caller, p):
@@ -22,23 +22,23 @@ def make_english(caller, p):
             if p.name == "name":
                 return "My name is {}.".format(p.value)
 
-            return "I {} is {}.".format(p.name, try_name(p))
+            return "I {} is {}.".format(p.name, try_name(p.value))
 
         elif p.entity is None:
-            return "Did you know that {} is {}?".format(p.name, try_name(p))
+            return "Did you know that {} is {}?".format(p.name, try_name(p.value))
 
         else:
             if p.name == "name":
                 return "His name is {}.".format(p.value)
 
-            return "Did you know that {}\'s {} is {}?".format(p.entity, p.name, try_name(p))
+            return "Did you know that {}\'s {} is {}?".format(try_name(p.entity), p.name, try_name(p.value))
 
     elif isinstance(p, ActionPrecept):
         if p.entity is caller:
             if p.object is None:
                 return "I did {}!".format(p.action)
             else:
-                return "I did {} with {}!".format(p.action, p.object)
+                return "I did {} with {}!".format(p.action, try_name(p.object))
         else:
             if p.object is None:
                 return "I saw {} doing {}!".format(p.entity.name, p.action)
@@ -60,7 +60,7 @@ def make_english(caller, p):
             return 'My {} feelings are "{}"'.format(p.name, p.value)
 
         else:
-            return '{}\'s {} feelings are "{}"'.format(p.entity, p.name, p.value)
+            return '{}\'s {} feelings are "{}"'.format(try_name(p.entity), p.name, p.value)
 
     else:
         return "I don't know how to express [{}].".format(p)
