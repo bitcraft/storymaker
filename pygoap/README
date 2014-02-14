@@ -1,13 +1,11 @@
-pygoap v.3.3
-requires python 3.x
+# pyGOAP v.4
+_______________________________________________________________________________
 
-PyGoap is a small library for designing AI in python.  The basic library is based off of a well-known idea of using
-graph searches to to create believable behaviour in real-time.  Behavior is determined in real-time and is extremely
-open ended and well suited for emergent behaviors.
+## Advanced AI for Python
 
-PyGOAP agents can be programmed very simply with an easy to understand api.
+bitcraft (leif dot theden at gmail.com)
+v.4 - for python 3 (3.3 tested)
 
-If you are unfamiliar with GOAP, I invite you to do some research online, it may help you to understand this module.
+If you have any problems or suggestions, please contact me via email.
 
-
-have fun.
+*Released under the LGPL v3*
