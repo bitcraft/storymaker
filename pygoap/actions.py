@@ -31,30 +31,34 @@ class Action:
 
     def __init__(self):
         self.duration = self.default_duration
-        self.first_update = None
         self.context = None
         self.finished = False
-        self.last_update = False
 
-    def next(self, now):
+    def __iter__(self):
+        return self
+
+    def step(self, dt):
         """
         called by the environment.  do not override.  use update instead.
         return a precept
         """
-        if self.finished or self.last_update == now:
-            return None
 
+        # finished, but checked again
+        if self.finished:
+            raise StopIteration
+
+        # have not recv'd a precept during this time step
         else:
-            if self.first_update is None:
-                self.first_update = now
+            self.duration -= dt
 
-            if now - self.first_update >= self.duration:
+            # this action has run out of time
+            if self.duration <= 0:
                 self.finished = True
-                return None
+                raise StopIteration
 
+            # return an action from the update method
             else:
-                self.last_update = now
-                return self.update(now - self.first_update)
+                return self.update(dt)
 
     def update(self, dt):
         """

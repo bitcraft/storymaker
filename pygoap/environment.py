@@ -21,7 +21,6 @@ class ObjectBase(object):
     """
     class for objects that agents can interact with
     """
-
     name = 'noname'
 
     def __init__(self):
@@ -51,7 +50,6 @@ class Environment(object):
     Abstract class representing an Environment.
     'Real' Environment classes inherit from this
     """
-
     def __init__(self):
         self.time = 0
         self._agents = []
@@ -80,7 +78,6 @@ class Environment(object):
         """
         Add an entity to the environment
         """
-
         from pygoap.agent import GoapAgent
 
         debug("[env] adding %s", entity)
@@ -109,76 +106,79 @@ class Environment(object):
         else:
             self._entities.append(entity)
 
-    def update(self, td):
+    def update(self, dt):
         """
         * Update our time
         * Let agents know time has passed
         * Update actions that may be running
         * Add new actions to the que
         """
-
         # update time in the simulation
-        self.time += td
+        self.time += dt
 
         # let all the agents know that time has passed
         t_precept = TimePrecept(self.time)
 
         # speedier version of broadcast_precepts(); just send out time precepts
+        put_context = self._context_queue.put
         for agent in self.agents:
             for context in agent.process(t_precept):
-                self._context_queue.put(context)
+                put_context(context)
 
         self.handle_precepts()
-        self.handle_actions(td)
+        self.handle_actions(dt)
 
     def handle_precepts(self):
         """
         process all of the precepts in the queue
         """
-
         l = []
+        get_precept = self._precept_queue.get
         while 1:
             try:
-                precept = self._precept_queue.get(False)
-                l.append(precept)
+                l.append(get_precept(False))
             except queue.Empty:
                 self.broadcast_precepts(l)
                 break
 
-    def handle_actions(self, td):
+    def handle_actions(self, dt):
         """
         process all of the actions in the queue
         """
-
         next_queue = queue.Queue()
-        touched = []
+        touched = set()
+
+        # deref for speed
+        get_context = self._context_queue.get
+        put_context = self._context_queue.put
+        put_precept = self._precept_queue.put
         while 1:
             try:
-                context = self._context_queue.get(False)
+                context = get_context(False)
 
             except queue.Empty:
                 self._context_queue = next_queue
                 break
 
             else:
-                if context in touched or context.action.finished:
+                if context.action.finished or context.action in touched:
                     continue
 
+                touched.add(context.action)
+
                 #print("{} doing {}".format(context.caller, context))
-                for precept in context.action.next(self.time):
-                    self._precept_queue.put(precept)
+                for precept in context.action.step(dt):
+                    put_precept(precept)
 
                 if context.action.finished:
                     #print("{} {} finished".format(context.caller, context))
-                    touched.append(context)
                     context.touch()
                     context.caller.next_action()
                     for action in context.caller.current_action:
-                        self._context_queue.put(action)
+                        put_context(action)
 
                 else:
                     next_queue.put(context)
-
 
     def model_context(self, context):
         """

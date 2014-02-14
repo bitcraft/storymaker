@@ -130,17 +130,19 @@ class SpeakAction(Action):
     """
     communicate a precept
     """
-
     def __init__(self, p, *arg, **kwarg):
         super(SpeakAction, self).__init__(*arg, **kwarg)
         self.p = p
         self._sp = None
 
-    def update(self, dt):
+    def __iter__(self):
+        return self
+
+    def __next__(self, dt):
         if self._sp is None:
             msg = make_english(self.context.caller, self.p)
             self._sp = SpeechPrecept(self.context.caller, msg, self.p)
-        yield self._sp
+        return self._sp
 
 
 class Preferences:
