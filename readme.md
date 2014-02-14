@@ -8,8 +8,13 @@ v.4 - for python 3 (3.3 tested)
 
 If you have any problems or suggestions, please contact me via email.
 
-*Released under the LGPL v3*
+*Library released under the LGPL v3*
+*Demo released under the GPL v3*
 
+Demo is: main.py
+         lib/*
+
+All other files are public domain.
 
 
 ## News
@@ -125,12 +130,16 @@ _______________________________________________________________________________
 Environments position things, execute actions, and distribute precepts.
 
 _______________________________________________________________________________
+
+
 ## About the Demo
+_______________________________________________________________________________
 
 Please read the docstrings in main.py for more information.
 
-_______________________________________________________________________________
+
 ## Reference
+_______________________________________________________________________________
 
 http://web.media.mit.edu/~jorkin/goap.html
 
