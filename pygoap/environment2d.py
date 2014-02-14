@@ -63,7 +63,7 @@ class Pathfinding2D(object):
         return Node((x, y))
 
 
-class XYEnvironment(Environment, Pathfinding2D):
+class Environment2D(Environment, Pathfinding2D):
     """
     This class is for environments on a 2D plane.
 
@@ -71,13 +71,13 @@ class XYEnvironment(Environment, Pathfinding2D):
     """
 
     def __init__(self, width=10, height=10):
-        super(XYEnvironment, self).__init__()
+        super(Environment2D, self).__init__()
         self._positions = {}
         self.width = width
         self.height = height
 
-    def add(self, entity):
-        super(XYEnvironment, self).add(entity)
+    def add(self, entity, position=None):
+        super(Environment2D, self).add(entity)
         self.set_position(entity, self.default_position())
 
     def set_position(self, entity, position):
@@ -113,7 +113,7 @@ class XYEnvironment(Environment, Pathfinding2D):
         Return all objects exactly at a given position.
         """
 
-        return [ obj for obj in self.entitys if obj.position == position ]
+        return [obj for obj in self.entities if obj.position == position]
 
     def objects_near(self, position, radius):
         """
@@ -121,7 +121,7 @@ class XYEnvironment(Environment, Pathfinding2D):
         """
 
         radius2 = radius * radius
-        return [ obj for obj in self.entitys  
+        return [obj for obj in self.entities
                 if distance2(position, obj.position) <= radius2 ]
 
     def default_position(self):

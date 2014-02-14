@@ -19,11 +19,19 @@ TimePrecept = nt('TimePrecept', 'time')
 # used to remember a single piece of data
 DatumPrecept = nt('DatumPrecept', 'entity, name, value')
 
-# used to remember "seeing" an action performed
+# used to query another agent
+QuestionPrecept = nt('QuestionPrecept', 'entity, name, value')
+
+# used to remember "seeing" (or hearing) an action performed
 ActionPrecept = nt('ActionPrecept', 'entity, action, object')
+
+# used by one agent to suggest an action take place
+# this is used to coordinate actions between agents
+PropositionPrecept = nt('PropositionPrecept', 'entity, action, object')
 
 # used to remember spoken words
 SpeechPrecept = nt('SpeechPrecept', 'entity, message')
 
 # used to store moods
 MoodPrecept = nt('MoodPrecept', 'entity, name, value')
+

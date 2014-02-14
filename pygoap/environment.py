@@ -30,7 +30,7 @@ class ObjectBase(object):
         """
         generate a list of actions that could be used with this object
         """
-        return []        
+        return []
 
     def condition(self, name):
         try:
@@ -50,6 +50,7 @@ class Environment(object):
     Abstract class representing an Environment.
     'Real' Environment classes inherit from this
     """
+
     def __init__(self):
         self.time = 0
         self._agents = []
@@ -108,10 +109,14 @@ class Environment(object):
 
     def update(self, dt):
         """
-        * Update our time
-        * Let agents know time has passed
-        * Update actions that may be running
-        * Add new actions to the que
+        ***  Time is expected to be in milliseconds   ***
+
+        ***  All actions must have same unit of time  ***
+
+        - Update our time
+        - Let agents know time has passed
+        - Update actions that may be running
+        - Add new actions to the queue
         """
         # update time in the simulation
         self.time += dt
