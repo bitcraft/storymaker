@@ -43,7 +43,7 @@ def make_english(caller, p):
             if p.object is None:
                 return "I saw {} doing {}!".format(p.entity.name, p.action)
             else:
-                return "I saw {} doing {} with {}!".format(p.entity.name, p.action, p.object)
+                return "I saw {} doing {} with {}!".format(p.entity.name, p.action, try_name(p.object))
 
     elif isinstance(p, SpeechPrecept):
         if p.entity is caller:

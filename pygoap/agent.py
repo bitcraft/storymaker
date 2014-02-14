@@ -22,7 +22,6 @@ class GoapAgent(ObjectBase):
     inventories will be implemented using precepts and a list.
     currently, only one action running concurrently is supported.
     """
-
     # not implemented yet
     idle_timeout = 30
 
@@ -58,12 +57,9 @@ class GoapAgent(ObjectBase):
         precepts can be put through filters to change them.
         this can be used to simulate errors in judgement by the agent.
         """
-
-        r = []
         for f in self.filters:
-            r.extend(f(self, precept))
-
-        return r
+            for p in f(self, precept):
+                yield p
 
     def process(self, precept):
         """
@@ -78,13 +74,11 @@ class GoapAgent(ObjectBase):
         # threads or the environment may lock the planner for performance or data
         # integrity reasons.  if the planner is locked, then silently return []
         if self.planning_lock.acquire(False):
-            a = self.running_actions()
-
+            a = self.running_contexts()
             if not a:
                 self.replan()
-
             self.planning_lock.release()
-            return self.running_actions()
+            return self.running_contexts()
 
         return []
 
@@ -92,7 +86,6 @@ class GoapAgent(ObjectBase):
         """
         force agent to re-evaluate goals and to formulate a plan
         """
-
         # get the relevancy of each goal according to the state of the agent
         s = ((g.get_relevancy(self.memory), g) for g in self.goals)
 
@@ -118,11 +111,11 @@ class GoapAgent(ObjectBase):
                 debug("[agent] %s has plan %s", self, self.plan)
                 break
 
-    def running_actions(self):
-        return self.current_action
+    def running_contexts(self):
+        return self.current_context
 
     @property
-    def current_action(self):
+    def current_context(self):
         """
         get the current action of the current plan
         """
@@ -131,9 +124,9 @@ class GoapAgent(ObjectBase):
         except IndexError:
             return []
 
-    def next_action(self):
+    def next_context(self):
         """
-        force the agent to stop the current action and start the next one
+        force the agent to stop the current action (context) and start the next one
 
         used by the environment.
         """

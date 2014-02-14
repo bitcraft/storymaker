@@ -33,36 +33,35 @@ class Action:
         self.duration = self.default_duration
         self.context = None
         self.finished = False
+        self._interval = None
+        self._generator = None
 
     def __iter__(self):
         return self
 
+    def __next__(self):
+        if self._generator is None:
+            self._generator = self.update(self._interval)
+        return next(self._generator)
+
     def step(self, dt):
         """
         called by the environment.  do not override.  use update instead.
-        return a precept
+        return a generator of update()
+            the generator will repeat until self._duration is <= 0
         """
+        self.duration -= dt
+        self._interval = dt
+        self._generator = None
 
-        # finished, but checked again
-        if self.finished:
-            raise StopIteration
+        if self.duration <= 0:
+            self.finished = True
 
-        # have not recv'd a precept during this time step
-        else:
-            self.duration -= dt
-
-            # this action has run out of time
-            if self.duration <= 0:
-                self.finished = True
-                raise StopIteration
-
-            # return an action from the update method
-            else:
-                return self.update(dt)
+        return self
 
     def update(self, dt):
         """
-        return a precept
+        must be a generator that returns precepts
         """
         raise NotImplementedError
 

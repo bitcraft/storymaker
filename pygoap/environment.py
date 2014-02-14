@@ -125,8 +125,8 @@ class Environment(object):
             for context in agent.process(t_precept):
                 put_context(context)
 
-        self.handle_precepts()
         self.handle_actions(dt)
+        self.handle_precepts()
 
     def handle_precepts(self):
         """
@@ -161,7 +161,7 @@ class Environment(object):
                 break
 
             else:
-                if context.action.finished or context.action in touched:
+                if context.action in touched:
                     continue
 
                 touched.add(context.action)
@@ -173,8 +173,8 @@ class Environment(object):
                 if context.action.finished:
                     #print("{} {} finished".format(context.caller, context))
                     context.touch()
-                    context.caller.next_action()
-                    for action in context.caller.current_action:
+                    context.caller.next_context()
+                    for action in context.caller.current_context:
                         put_context(action)
 
                 else:
@@ -193,17 +193,15 @@ class Environment(object):
         """
         model_precept = self.model_precept
         model_context = self.model_context
-        enqueue_context = self._context_queue.put
+        put_context = self._context_queue.put
 
         for p in precepts:
-
             self.broadcast_hook(p)
-
             for agent in self._agents:
                 for context in agent.process(model_precept(p, agent)):
                     context = model_context(context)
                     if context:
-                        enqueue_context(context)
+                        put_context(context)
 
     def broadcast_hook(self, p):
         if isinstance(p, SpeechPrecept):
