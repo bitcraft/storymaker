@@ -2,8 +2,6 @@
 Memories are stored precepts.
 """
 
-import weakref
-
 
 class MemoryManager(set):
     """
