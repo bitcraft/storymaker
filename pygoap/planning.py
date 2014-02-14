@@ -69,7 +69,7 @@ def plan(parent, contexts, start_action, start_memory, goal):
 
     # heap_index works around a 'bug' in python 3.x where the next value in a tuple
     # is compared if the current set are equal.  using heap_index ensures that the
-    # planning nodes will never be compared (which raises a different exception!)
+    # planning nodes will never be compared (which raises a an exception!)
     key_node = PlanningNode(None, None, start_action, start_memory)
     heap_index = 0
     open_list = [(0, heap_index, key_node)]

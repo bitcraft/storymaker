@@ -1,5 +1,10 @@
 """
 Contains a set of useful precept types for use with an environment.
+
+implementation note:
+    recent evidence shows that named tuples are *slow*.
+    i'll continue to use them however, as they are advertised as memory efficient.
+    ...needs more evidence, however
 """
 
 from collections import namedtuple as nt
