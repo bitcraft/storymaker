@@ -61,7 +61,7 @@ _______________________________________________________________________________
 
 Precepts are created by Actions and distributed by the environment.  Agents
 receive precepts and store them.  Precepts carry information that is specific
-to the type of precept (Speach, Action, etc).
+to the type of precept (Speech, Action, etc).
 
 _______________________________________________________________________________
 ### Memory
@@ -100,7 +100,7 @@ Goals have:
 * A Touch: change Memory by adding a precept
 
 This is a huge divergence from GOAP.  Goals in pyGOAP are also used as prereqs
-("preconditions") and effects.  This greatly simplfies the planner and removes
+("preconditions") and effects.  This greatly simplifies the planner and removes
 a huge duplication of code in building Abilities (GOAP "actions").
 
 _______________________________________________________________________________
@@ -114,14 +114,14 @@ _______________________________________________________________________________
 ### Agent
 *Agents have the ability to plan and do actions.*  
 
-Agents have abilities, goals, and memory.  They recieve precepts from the
+Agents have abilities, goals, and memory.  They receive precepts from the
 environment and give the environment actions that they wish to carry out.
 
-Agents will search through all of it's Goals when it recieves a new precept
-and find the Goal that is most "relevent".  If the Goal has changed (or perhaps
+Agents will search through all of it's Goals when it receives a new precept
+and find the Goal that is most "relevant".  If the Goal has changed (or perhaps
 there wasn't a goal in the first place), the Agent will attempt to create a
 plan that satisfies the Goal.  If it cannot, it will simply try again once
-a new precept is recieved from the environment.
+a new precept is received from the environment.
 
 _______________________________________________________________________________
 ### Environment
