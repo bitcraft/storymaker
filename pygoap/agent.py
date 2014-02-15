@@ -18,9 +18,6 @@ def time_filter(precept):
 class GoapAgent(ObjectBase):
     """
     AI Agent
-
-    inventories will be implemented using precepts and a list.
-    currently, only one action running concurrently is supported.
     """
     # not implemented yet
     idle_timeout = 30
@@ -36,7 +33,7 @@ class GoapAgent(ObjectBase):
         self.current_goal = None
 
         self.goals = set()          # all goals this instance can use
-        self.abilities = set()        # all actions this agent can perform (defined by action contexts!)
+        self.abilities = set()      # all actions this agent can perform (defined by action contexts!)
         self.filters = []           # list of methods to use as a filter
         self.plan = []              # list of actions to perform
 
