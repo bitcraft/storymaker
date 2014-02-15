@@ -1,10 +1,10 @@
-# pyGOAP v.4
+# pyGOAP
 _______________________________________________________________________________
 
 ## Advanced AI for Python
 
 bitcraft (leif dot theden at gmail.com)
-v.4 - for python 3 (3.3 tested)
+github.com/bitcraft/pygoap
 
 If you have any problems or suggestions, please contact me via email.
 
