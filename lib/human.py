@@ -47,7 +47,6 @@ class AgeAction(Action):
     """
     simulate human aging
     """
-
     def __init__(self, *arg, **kwarg):
         super(AgeAction, self).__init__(*arg, **kwarg)
         self.age = 0
@@ -255,7 +254,6 @@ class Human(GoapAgent):
         """
         add goals that are inherent to humans
         """
-
         if self.sex:
             baby_goal = PreceptGoal(DatumPrecept(self, "has baby", True))
             self.goals.add(baby_goal)
