@@ -18,7 +18,6 @@ class GoapAgent(ObjectBase):
         self.memory = MemoryManager()
         self.delta = MemoryManager()
         self.lock = threading.Lock()
-        self.current_goal = None
         self.goals = set()          # all goals this instance can use
         self.abilities = set()      # all actions this agent can perform (defined by action contexts!)
         self.filters = []           # list of methods to use as a filter
@@ -29,7 +28,6 @@ class GoapAgent(ObjectBase):
 
     def reset(self):
         self.memory = MemoryManager()
-        self.current_goal = None
         self.goals = set()
         self.abilities = set()
         self.filters = []
@@ -91,7 +89,6 @@ class GoapAgent(ObjectBase):
             if tentative_plan:
                 tentative_plan.pop(-1)
                 self.plan = tentative_plan
-                self.current_goal = goal
                 debug("[agent] %s has planned to %s", self, goal)
                 debug("[agent] %s has plan %s", self, self.plan)
                 break
