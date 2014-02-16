@@ -1,31 +1,24 @@
 __author__ = 'Leif'
 
 from pygoap.agent import GoapAgent
-from pygoap.actions import *
+from pygoap.actions import Action
 from pygoap.goals import *
 from pygoap.precepts import *
 from lib.english import make_english
-from lib.society import *
 from lib.traits import *
 from collections import defaultdict
 import random
 
 
-def coroutine(func):
-    def start(*args,**kwargs):
-        cr = func(*args,**kwargs)
-        cr.next()
-        return cr
-    return start
-
-
 # get all known entities at this point
 # do this by checking for "name" DatumPrecepts
 def get_known_agents(agent):
-    for p in agent.memory.of_class(DatumPrecept):
-        if p.name == "name":
+    for p in agent.memory:
+        try:
             if p.entity is not agent:
                 yield p.entity
+        except AttributeError:
+            continue
 
 
 def opposite_sex(agent, others):
@@ -34,12 +27,14 @@ def opposite_sex(agent, others):
             yield other
 
 
-class AgeAbility(Ability):
-    def get_contexts(self, caller, memory=None):
+class AgeAbility(Action):
+    requires = [DatumPrecept]
+
+    def get_actions(self, parent, memory=None):
         effects = []
         prereqs = []
         action = AgeAction()
-        context = ActionContext(caller, action, prereqs, effects)
+        context = ActionContext(parent, action, prereqs, effects)
         yield context
 
 
@@ -55,104 +50,109 @@ class AgeAction(Action):
         self.age += dt
         yield None
 
-class GiveBirthAbility(Ability):
+
+class GiveBirthAbility(Action):
     """
     simulate birth
     """
-    def get_contexts(self, caller, memory=None):
-        effects = [PreceptGoal(DatumPrecept(caller, "has baby", True)),
-                   PreceptGoal(DatumPrecept(caller, "ready to birth", False))]
-        prereqs = [PreceptGoal(DatumPrecept(caller, "ready to birth", True))]
-        action = GiveBirthAction()
-        context = ActionContext(caller, action, prereqs, effects)
-        yield context
+    requires = [DatumPrecept]
+
+    def get_actions(self, parent, memory=None):
+        effects = [PreceptGoal(DatumPrecept(parent, "has baby", True)),
+                   PreceptGoal(DatumPrecept(parent, "ready to birth", False))]
+        prereqs = [PreceptGoal(DatumPrecept(parent, "ready to birth", True))]
+        yield GiveBirthAction(parent, prereqs, effects)
 
 
 class GiveBirthAction(Action):
     def update(self, dt):
-        yield SpeechPrecept(self.context.caller, "my baby is here!")
-        yield ActionPrecept(self.context.caller, "birth", None)
+        yield SpeechPrecept(self.parent, "my baby is here!")
+        yield ActionPrecept(self.parent, "birth", None)
 
 
-class GestationAbility(Ability):
+class GestationAbility(Action):
     """
     simulate child gestation
     """
-    def get_contexts(self, caller, memory=None):
-        effects = [PreceptGoal(DatumPrecept(caller, "ready to birth", True))]
-        prereqs = [PreceptGoal(DatumPrecept(caller, "had sex", True))]
-        action = GestationAction()
-        context = ActionContext(caller, action, prereqs, effects)
-        yield context
+    requires = [DatumPrecept]
+
+    def get_actions(self, parent, memory=None):
+        effects = [PreceptGoal(DatumPrecept(parent, "ready to birth", True))]
+        prereqs = [PreceptGoal(DatumPrecept(parent, "had sex", True))]
+        yield GestationAction(parent, prereqs, effects)
 
 
 class GestationAction(Action):
     default_duration = 5
 
-    def update(self, dt):
-        yield None
 
-
-class CopulateAbility(Ability):
+class CopulateAbility(Action):
     """
     simulate sex
     """
-    def get_contexts(self, caller, memory=None):
-        for other in opposite_sex(caller, get_known_agents(caller)):
-            if not other.sex == caller.sex:
-                effects = [PreceptGoal(ActionPrecept(caller, "sex", other)),
-                           PreceptGoal(DatumPrecept(caller, "had sex", True))]
-                action = CopulateAction(other)
-                context = ActionContext(caller, action, None, effects)
-                yield context
+    requires = [DatumPrecept]
+
+    def get_actions(self, parent, memory=None):
+        for other in opposite_sex(parent, get_known_agents(parent)):
+            if not other.sex == parent.sex:
+                effects = [PreceptGoal(ActionPrecept(parent, "sex", other)),
+                           PreceptGoal(DatumPrecept(parent, "had sex", True))]
+                yield CopulateAction(parent, None, effects, other=other)
 
 
 class CopulateAction(Action):
-    def __init__(self, other, *arg, **kwarg):
-        super(CopulateAction, self).__init__(*arg, **kwarg)
-        self.other = other
+    def __init__(self, *args, **kwargs):
+        super(CopulateAction, self).__init__(*args, **kwargs)
+        self.other = kwargs.get('other', None)
+        assert(self.other is not None)
 
     def update(self, dt):
-        yield ActionPrecept(self.context.caller, "sex", self.other)
+        yield ActionPrecept(self.parent, "sex", self.other)
 
 
-class SpeakAbility(Ability):
+class SpeakAbility(Action):
     """
-    examine caller's memory and create some things to say
+    examine parent's memory and create some things to say
     """
-    # perception will be moved in to another class someday
-    def __init__(self):
-        super(SpeakAbility, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(SpeakAbility, self).__init__(*args, **kwargs)
         self.perception_map = defaultdict(list)
 
-    def get_contexts(self, caller, memory=None):
+    def get_actions(self, parent, memory=None):
         if memory is not None:
+            if len(memory) == 0:
+                raise StopIteration
             p = random.choice(list(memory))
-            if p not in self.perception_map[caller]:
-                effects = [PreceptGoal(DatumPrecept(caller, "chatter", True))]
-                action = SpeakAction(p)
-
-                # assume when speaking, all other actors will receive the message
-                self.perception_map[caller].append(p)
-
-                yield ActionContext(caller, action, None, effects)
+            if p not in self.perception_map[parent]:
+                if p is None:
+                    print(memory, p)
+                self.perception_map[parent].append(p)  # assume when speaking all actors will receive the message
+                effects = [PreceptGoal(DatumPrecept(parent, "chatter", True))]
+                yield SpeakAction(parent, None, effects, precept=p)
 
 
 class SpeakAction(Action):
-    """
-    communicate a precept
-    """
-    def __init__(self, p, *arg, **kwarg):
-        super(SpeakAction, self).__init__(*arg, **kwarg)
-        self.p = p
-        self._sp = None
+    def __init__(self, *args, **kwargs):
+        super(SpeakAction, self).__init__(*args, **kwargs)
+        self.p = kwargs.get('precept', None)
+        assert(self.p is not None)
 
     def update(self, dt):
-        if self._sp is None:
-            msg = make_english(self.context.caller, self.p)
-            self._sp = SpeechPrecept(self.context.caller, msg)
-        yield self._sp  # return a speech precept
-        yield self.p    # return a the original precept (simulates passing of information through speech)
+        msg = SpeechPrecept(self.parent, make_english(self.parent, self.p))
+        yield msg     # return a speech precept
+        yield self.p  # return a the original precept (simulates passing of information through speech)
+
+
+class TeleSend(Action):
+    """
+    Telepathic Communication (a joke!)
+    """
+    def __init__(self, p, *arg, **kwarg):
+        super(TeleSend, self).__init__(*arg, **kwarg)
+        self.p = p
+
+    def update(self, dt):
+        yield self.p
 
 
 class Preferences:
@@ -196,9 +196,7 @@ class Human(GoapAgent):
         "content",     # low values cause agent to seek another activity
         "hunger",      # negative requires food
         "rested",      # negative requires sleep
-        "agitated",    # high values affect behaviour
-        "stress",      # high values affect behaviour
-        "overload",    # high values affect behaviour
+        "stressed",    # high values affect behaviour
     )
 
     population = 0
@@ -238,14 +236,14 @@ class Human(GoapAgent):
         add abilities that are inherent to humans
         """
         if self.sex:
-            self.abilities.add(GestationAbility())
-            self.abilities.add(GiveBirthAbility())
+            self.abilities.add(GestationAbility(self))
+            self.abilities.add(GiveBirthAbility(self))
 
-        self.abilities.add(AgeAbility())
-        self.abilities.add(SpeakAbility())
-        self.abilities.add(CopulateAbility())
+        #self.abilities.add(AgeAbility(self))
+        self.abilities.add(SpeakAbility(self))
+        self.abilities.add(CopulateAbility(self))
 
-        self.filters.append(copulate_filter)
+        #self.filters.append(copulate_filter)
 
     def model_goals(self):
         """

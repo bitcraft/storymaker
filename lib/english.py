@@ -57,10 +57,15 @@ def make_english(caller, p):
 
     elif isinstance(p, MoodPrecept):
         if p.entity is caller:
-            return 'My {} feelings are "{}"'.format(p.name, p.value)
+            if p.value < .5:
+                return 'I am not {}.'.format(p.name)
+            else:
+                return 'I am {}.'.format(p.name)
 
         else:
-            return '{}\'s {} feelings are "{}"'.format(try_name(p.entity), p.name, p.value)
-
+            if p.value < .5:
+                return '{} is feeling not {}.'.format(try_name(p.entity), p.name)
+            else:
+                return '{} is feeling {}.'.format(try_name(p.entity), p.name)
     else:
         return "I don't know how to express [{}].".format(p)

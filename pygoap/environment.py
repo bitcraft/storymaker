@@ -56,7 +56,7 @@ class Environment(object):
         self._agents = []
         self._entities = []
         self._positions = {}
-        self._context_queue = queue.Queue()
+        self._action_queue = queue.Queue()
         self._precept_queue = queue.Queue()
 
     @property
@@ -78,13 +78,9 @@ class Environment(object):
 
         debug("[env] adding %s", entity)
 
-        # hackish way to force agents to re-evaluate their environment
-        for a in self._agents:
-            for i in [p for p in a.memory.of_class(DatumPrecept) if p.name == 'aware']:
-                a.memory.remove(i)
-
         # add the agent
-        if isinstance(entity, GoapAgent):
+        #if isinstance(entity, GoapAgent):
+        if 1:
             self._agents.append(entity)
             entity.environment = self
             self._positions[entity] = (None, (0, 0))
@@ -113,13 +109,13 @@ class Environment(object):
 
         self.handle_precepts()
 
-        context_put = self._context_queue.put
+        action_put = self._action_queue.put
         for agent in self.agents:
             agent.plan_if_needed()
-            for context in agent.running_contexts:
-                context_put(context)
+            for action in agent.running_actions:
+                action_put(action)
 
-        self.handle_contexts(dt)
+        self.handle_actions(dt)
 
     def handle_precepts(self):
         """
@@ -146,7 +142,7 @@ class Environment(object):
         for agent in self._agents:
             agent.process_list(model_precepts(precepts, agent))
 
-    def handle_contexts(self, dt):
+    def handle_actions(self, dt):
         """
         process all of the actions in the queue
         """
@@ -154,43 +150,44 @@ class Environment(object):
         touched = set()
 
         # deref for speed
-        context_get = self._context_queue.get
-        context_put = self._context_queue.put
+        action_get = self._action_queue.get
+        action_put = self._action_queue.put
         precept_put = self._precept_queue.put
         while 1:
             try:
-                context = context_get(False)
+                action = action_get(False)
 
             except queue.Empty:
-                self._context_queue = next_queue
+                self._action_queue = next_queue
                 break
 
             else:
-                if context.action in touched:
+                if action in touched:
                     continue
 
-                touched.add(context.action)
+                touched.add(action)
 
-                #print("{} doing {}".format(context.caller, context))
-                for precept in context.action.step(dt):
-                    precept_put(precept)
+                #print("{} doing {}".format(action.parent, action))
+                for precept in action.step(dt):
+                    if precept:
+                        precept_put(precept)
 
-                if context.action.finished:
-                    #print("{} {} finished".format(context.caller, context))
-                    context.touch()
-                    context.caller.next_context()
-                    for _context in context.caller.running_contexts:
-                        context_put(_context)
+                if action.finished:
+                    #print("{} {} finished".format(action.parent, action))
+                    action.touch()
+                    action.parent.next_action()
+                    for _action in action.parent.running_actions:
+                        action_put(_action)
 
                 else:
-                    next_queue.put(context)
+                    next_queue.put(action)
 
-    def model_context(self, context):
+    def model_action(self, action):
         """
         Used to model how an action interacts with the environment.
         Environment can ability to silence actions if they are not able to run.
         """
-        return context
+        return action
 
     def broadcast_hook(self, p):
         if isinstance(p, SpeechPrecept):

@@ -7,31 +7,34 @@ class ActionException(Exception):
     pass
 
 
-class Ability:
-    """
-    Abilities evaluate a blackboard and generate actions for an agent to use.
-    """
-    provides = []
-    requires = []
-
-    def get_contexts(self, caller, memory=None):
-        """
-        Return a generator of all the actions valid in this context
-        """
-        raise NotImplementedError
-
-
 class Action:
     """
-    duration should be at least 1.  if it is 0 (or less), then the agent will
-    make a new plan on each precept during a time step.  this will kill
-    performance and there seems to be no real advantages to this design.
+    Action / Operator
+
+    I just don't even know anymore
     """
     default_duration = 1
+    provides = []
+    requires = []
+    domain = None
 
-    def __init__(self):
+    def __init__(self, parent, prereqs=None, effects=None, name=None, memory=None, **kwargs):
+        self.parent = parent
+        self.name = name
+
+        self.prereqs = prereqs
+        if self.prereqs is None:
+            self.prereqs = []
+
+        self.effects = effects
+        if self.effects is None:
+            self.effects = []
+
+        self.memory = memory
+        if self.memory is None:
+            self.memory = set()
+
         self.duration = self.default_duration
-        self.context = None
         self.finished = False
         self._interval = None
         self._generator = None
@@ -43,6 +46,9 @@ class Action:
         if self._generator is None:
             self._generator = self.update(self._interval)
         return next(self._generator)
+
+    def __repr__(self):
+        return '<ActionContext: {}>'.format(self.__class__.__name__)
 
     def step(self, dt):
         """
@@ -61,47 +67,34 @@ class Action:
 
     def update(self, dt):
         """
-        must be a generator that returns precepts
+        must be a generator that yields precepts
         """
-        raise NotImplementedError
+        raise StopIteration
 
-
-class ActionContext:
-    """
-    Used by planner
-    """
-    def __init__(self, caller, action, prereqs=None, effects=None, **kwargs):
-        self.__dict__.update(kwargs)
-
-        self.caller = caller
-        self.action = action
-        action.context = self
-
-        self.prereqs = prereqs
-        if self.prereqs is None: self.prereqs = []
-
-        self.effects = effects
-        if self.effects is None: self.effects = []
-
-    def test(self, memory=None):
+    def get_actions(self, parent, memory=None):
         """
-        Determine whether or not this context is valid
+        Return a generator of child abilities, or [] if this can make changes to world state
+        """
+        return []
 
-        return a float from 0-1 that describes how valid this action is.
+    def pretest(self, memory):
+        """
+        Convenience function to pretest a Memory with all prereqs
 
-        validity of an action is a measurement of how effective the action will
-        be if it is completed successfully.
+        A pretest is a quicker test that should be called on a Memory delta
+        """
+        for prereq in self.prereqs:
+            if not prereq.pretest(memory):
+                return 0.0
 
-        if any of the prereqs are not partially valid ( >0 ) then will return 0
+        return 1.0
 
-        for many actions a simple 0 or 1 will work.  for actions which
-        modify numerical values, it may be useful to return a fractional value.
+    def test(self, memory):
+        """
+        Convenience function to test a Memory with all prereqs
         """
         if not self.prereqs:
             return 1.0
-
-        if memory is None:
-            raise Exception
 
         values = (i.test(memory) for i in self.prereqs)
 
@@ -114,10 +107,10 @@ class ActionContext:
 
     def touch(self, memory=None):
         """
-        Convenience function to touch a blackboard with all the effects
+        Convenience function to touch a Memory with all effects
         """
-        if memory is None: memory = self.caller.memory
-        [i.touch(memory) for i in self.effects]
+        if memory is None:
+            memory = self.parent.memory
 
-    def __repr__(self):
-        return '<ActionContext: {}>'.format(self.action.__class__.__name__)
+        for i in self.effects:
+            i.touch(memory)

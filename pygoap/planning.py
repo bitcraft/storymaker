@@ -5,31 +5,13 @@ import logging
 debug = logging.debug
 
 
-def get_children(parent_node, agent):
-    for ability in parent_node.abilities:
-        for context in ability.get_contexts(agent, parent_node.memory):
-            if context.test(parent_node.memory) > 0.0:
-                abilities = parent_node.abilities.copy()
-                abilities.remove(ability)
-                yield PlanningNode(parent_node, context, abilities)
+class PlanningNode:
+    __slots__ = 'parent action abilities memory delta time cost g h'.split()
+    agent = None
 
-
-class PlanningNode(object):
-    __slots__ = (
-        'parent',
-        'context',
-        'abilities',
-        'memory',
-        'delta',
-        'time',
-        'cost',
-        'g',
-        'h',
-    )
-
-    def __init__(self, parent, context, abilities, memory=None):
+    def __init__(self, parent, action, abilities, memory=None, agent=None):
         self.parent = parent
-        self.context = context
+        self.action = action
         self.abilities = abilities
         self.memory = MemoryManager()
         self.delta = MemoryManager()
@@ -38,30 +20,46 @@ class PlanningNode(object):
         self.g = -1
         self.h = 1
 
+        if agent:
+            PlanningNode.agent = agent
+
         if parent:
             self.memory.update(parent.memory)
 
         elif memory:
             self.memory.update(memory)
 
-        if context:
-            context.touch(self.memory)
-            context.touch(self.delta)
+        if action:
+            action.touch(self.memory)
+            action.touch(self.delta)
 
     def __repr__(self):
         if self.parent:
             return "<PlanningNode: '%s', cost: %s, p: %s>" % \
-                   (self.context.__class__.__name__,
+                   (self.action.__class__.__name__,
                     self.cost,
                     self.parent.context.__class__.__name__)
 
         else:
             return "<PlanningNode: '%s', cost: %s, p: None>" % \
-                   (self.context,
+                   (self.action,
                     self.cost)
 
 
-def plan(agent, abilities, start_context, start_memory, goal):
+# TODO: make recursive
+def get_children(parent):
+    for ability in parent.abilities:
+        for action in ability.get_actions(parent.agent, parent.memory):
+            if action.pretest(parent.memory):
+                if action.test(parent.memory) > 0.0:
+                    abilities = parent.abilities.copy()
+                    abilities.remove(ability)
+                    yield PlanningNode(parent, action, abilities)
+            else:
+                debug("[plan] action %s fail pretest", action)
+
+
+def plan(key_node, goal):
     """
     Return a list of contexts that could be called to satisfy the goal.
     Cannot duplicate contexts in the plan
@@ -70,7 +68,6 @@ def plan(agent, abilities, start_context, start_memory, goal):
     # heap_counter works around a 'bug' in python 3.x where the next value in a tuple
     # is compared if the current set are equal.  using heap_counter ensures that the
     # planning nodes will never be compared (which raises a an exception!)
-    key_node = PlanningNode(None, start_context, abilities, start_memory)
     heap = []
     heap_index = {}
     heap_counter = 0
@@ -80,8 +77,7 @@ def plan(agent, abilities, start_context, start_memory, goal):
     pushback = (0, heap_counter, key_node)
     open_list.add(key_node)
 
-    debug("[plan] solve %s starting from %s", goal, start_context)
-    debug("[plan] memory supplied is %s", start_memory)
+    debug("[plan] memory supplied is %s", key_node.memory)
 
     while heap or pushback:
         if pushback:
@@ -93,7 +89,7 @@ def plan(agent, abilities, start_context, start_memory, goal):
             break
         open_list.remove(key_node)
         closed_list.add(key_node)
-        for child in get_children(key_node, agent):
+        for child in get_children(key_node):
             if child in closed_list:
                 continue
             g = key_node.g + child.cost
@@ -115,10 +111,10 @@ def plan(agent, abilities, start_context, start_memory, goal):
 
     # sometime in the future, the planner will be able to resolve contexts that can run concurrently.
     # until then, simply add each step as a single-element list
-    debug("[plan] successful %s %s", key_node.context, key_node.parent)
-    path = [[key_node.context]]
+    debug("[plan] successful %s %s", key_node.action, key_node.action)
+    path = [[key_node.action]]
     while key_node.parent is not None:
         key_node = key_node.parent
-        path.append([key_node.context])
+        path.append([key_node.action])
     return path
 

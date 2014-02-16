@@ -1,5 +1,5 @@
 from pygoap.environment import ObjectBase
-from pygoap.planning import plan
+from pygoap.planning import PlanningNode, plan
 from pygoap.memory import MemoryManager
 from pygoap.precepts import *
 import logging
@@ -12,17 +12,21 @@ class GoapAgent(ObjectBase):
     """
     AI Agent
     """
-    idle_timeout = 30 # not implemented yet
+    idle_timeout = 30  # not implemented yet
 
     def __init__(self):
         super(GoapAgent, self).__init__()
         self.memory = MemoryManager()
+        self.delta = MemoryManager()
         self.lock = threading.Lock()
         self.current_goal = None
         self.goals = set()          # all goals this instance can use
         self.abilities = set()      # all actions this agent can perform (defined by action contexts!)
         self.filters = []           # list of methods to use as a filter
         self.plan = []              # list of actions to perform
+
+    def __repr__(self):
+        return "<Agent: {}>".format(self.name)
 
     def reset(self):
         self.memory = MemoryManager()
@@ -37,10 +41,12 @@ class GoapAgent(ObjectBase):
         precepts can be put through filters to change them.
         this can be used to simulate errors in judgement by the agent dropping the precept,
         or maybe a condition or limitation of the agent
-        """
+
         for f in self.filters:
             for p in f(self, precept):
                 yield p
+        """
+        yield precept
 
     def process_list(self, all_precepts):
         """
@@ -59,7 +65,7 @@ class GoapAgent(ObjectBase):
         for this_precept in self.filter_precept(precept):
             debug("[agent] %s recv'd precept %s", self, this_precept)
             if not isinstance(precept, TimePrecept):
-                self.memory.add(precept)
+                self.delta.add(precept)
 
     # hack
     def plan_if_needed(self):
@@ -73,16 +79,16 @@ class GoapAgent(ObjectBase):
         # get the relevancy of each goal according to the state of the agent
         # filter out goals that are not relevant (==0)
         # sort goals so that highest relevancy are first
-        s = sorted(
-            filter(None, ((g.get_relevancy(self.memory), g) for g in self.goals)),
-            reverse=True, key=lambda i: i[0])
+        s = sorted(((g.get_relevancy(self.memory), g) for g in self.goals), reverse=True, key=lambda i: i[0])
+        s = [i for i in s if i[0]]
 
         debug("[agent] %s has goals %s", self, s)
 
         start_action = None
         self.plan = []
         for score, goal in s:
-            tentative_plan = plan(self, self.abilities, start_action, self.memory, goal)
+            node = PlanningNode(None, start_action, self.abilities, self.delta, agent=self)
+            tentative_plan = plan(node, goal)
 
             if tentative_plan:
                 tentative_plan.pop(-1)
@@ -92,8 +98,13 @@ class GoapAgent(ObjectBase):
                 debug("[agent] %s has plan %s", self, self.plan)
                 break
 
+        self.memory.update(self.delta)
+        self.delta.clear()
+
+        return self.plan
+
     @property
-    def running_contexts(self):
+    def running_actions(self):
         """
         get the current contexts of the current plan
         """
@@ -102,7 +113,7 @@ class GoapAgent(ObjectBase):
         except IndexError:
             return []
 
-    def next_context(self):
+    def next_action(self):
         """
         force the agent to stop the current action (context) and start the next one
         """

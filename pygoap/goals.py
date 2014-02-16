@@ -35,6 +35,7 @@ class GoalBase:
         except IndexError:
             self.condition = None
 
+        self.required_types = frozenset()
         self.weight = 1.0
         self.args = args
         self.kw = kwargs
@@ -93,10 +94,19 @@ class PreceptGoal(GoalBase):
     def __init__(self, *args, **kwargs):
         super(PreceptGoal, self).__init__(*args, **kwargs)
         assert (len(self.args) > 0)
+        _temp = set()
         for a in self.args:
             assert (isinstance(a, PreceptGoal.valid))
+            _temp.add(type(a))
+        self.required_types = frozenset(_temp)
         if kwargs.get("name", None):
             self.name = kwargs['name']
+
+    def pretest(self, precepts):
+        """
+        A pretest is a quicker test that should be called on a Memory delta
+        """
+        return not self.required_types.isdisjoint(map(type, precepts))
 
     def test(self, memory):
         total = 0.0
