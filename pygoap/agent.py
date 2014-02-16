@@ -8,11 +8,6 @@ import threading
 debug = logging.debug
 
 
-# required to reduce memory usage
-def time_filter(precept):
-    return None if isinstance(precept, TimePrecept) else precept
-
-
 class GoapAgent(ObjectBase):
     """
     AI Agent
@@ -32,9 +27,6 @@ class GoapAgent(ObjectBase):
         self.abilities = set()      # all actions this agent can perform (defined by action contexts!)
         self.filters = []           # list of methods to use as a filter
         self.plan = []              # list of actions to perform
-
-        # this special filter will prevent time precepts from being stored
-        #self.filters.append(time_filter)
 
     def reset(self):
         self.memory = MemoryManager()
