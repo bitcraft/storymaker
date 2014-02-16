@@ -109,8 +109,6 @@ def plan(key_node, goal):
     else:
         return []
 
-    # sometime in the future, the planner will be able to resolve contexts that can run concurrently.
-    # until then, simply add each step as a single-element list
     debug("[plan] successful %s %s", key_node.action, key_node.action)
     path = [[key_node.action]]
     while key_node.parent is not None:

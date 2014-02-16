@@ -23,6 +23,9 @@ class Trait:
     def __add__(self, other):
         return self.value + other
 
+    def __repr__(self):
+        return '<Trait: {} {}>'.format(self.name, self.value)
+
 
 class Traits:
     """
@@ -59,6 +62,9 @@ class Traits:
             return self.__traits[item]
         except KeyError:
             raise AttributeError
+
+    def __iter__(self):
+        return iter(self.__traits)
 
     @classmethod
     def random(cls):

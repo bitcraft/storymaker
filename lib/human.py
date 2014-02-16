@@ -189,19 +189,36 @@ def copulate_filter(agent, p):
     return r
 
 
-class Human(GoapAgent):
-    mood_names = (
+def conversation_filter(agent, p):
+    try:
+        assert(isinstance(p, SpeechPrecept))
+    except AssertionError:
+        yield p
+        raise StopIteration
+
+    agent.moods.content.value -= .1
+    if agent.moods.content.value < 0:
+        agent.moods.content.value = 0.0
+
+    yield p
+
+
+class Moods(Traits):
+    default = (
         "content",     # low values cause agent to seek another activity
         "hunger",      # negative requires food
         "rested",      # negative requires sleep
         "stressed",    # high values affect behaviour
     )
 
+
+class Human(GoapAgent):
     population = 0
 
     def __init__(self, **kwarg):
         super(Human, self).__init__()
         self.traits = Traits()
+        self.moods = None                   # will get set later in model_moods()
         self.sex = kwarg.get("sex", 0)
 
         name = kwarg.get("name", None)
@@ -209,12 +226,16 @@ class Human(GoapAgent):
             name = "Pathetic Human #{:03d}".format(Human.population)
         self.name = name
 
-        self.reset_moods()
+        self.model_moods()
 
         Human.population += 1
 
-    def reset_moods(self):
-        for name in Human.mood_names:
+    def model_moods(self):
+        m = Moods()
+        m.content.value = 1.0
+
+        self.moods = m
+        for name in self.moods:
             p = MoodPrecept(self, name, float())
             self.process(p)
 
@@ -222,10 +243,10 @@ class Human(GoapAgent):
         super(Human, self).reset()
         self.traits = Traits()
         self.sex = 0
-        self.reset_moods()
         self.model()
 
     def model(self):
+        self.model_moods()
         self.model_abilities()
         self.model_goals()
 
@@ -241,23 +262,25 @@ class Human(GoapAgent):
         self.abilities.add(SpeakAbility(self))
         self.abilities.add(CopulateAbility(self))
 
-        #self.filters.append(copulate_filter)
+        self.filters.append(copulate_filter)
+        self.filters.append(conversation_filter)
 
     def model_goals(self):
         """
         add goals that are inherent to humans
         """
         if self.sex:
-            baby_goal = PreceptGoal(DatumPrecept(self, "has baby", True), name="baby")
-            self.goals.add(baby_goal)
+            goal = PreceptGoal(DatumPrecept(self, "has baby", True), name="baby")
+            self.goals.add(goal)
 
         if self.traits.touchy > 0:
-            copulate_goal = PreceptGoal(DatumPrecept(self, "had sex", True), name="sex")
-            self.goals.add(copulate_goal)
+            goal = PreceptGoal(DatumPrecept(self, "had sex", True), name="sex")
+            self.goals.add(goal)
 
         if self.traits.chatty > 0:
-            chatter_goal = PreceptGoal(DatumPrecept(self, "chatter", True), name="chatty")
-            self.goals.add(chatter_goal)
+            goal = AVPreceptGoal(DatumPrecept(self, "chatter", True), name="chatty", weight=self.moods.content)
+            #goal = WeightedGoal(weight=self.moods.content)
+            self.goals.add(goal)
 
     def birth(self):
         pass

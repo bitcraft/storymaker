@@ -41,12 +41,11 @@ class GoapAgent(ObjectBase):
         precepts can be put through filters to change them.
         this can be used to simulate errors in judgement by the agent dropping the precept,
         or maybe a condition or limitation of the agent
+        """
 
         for f in self.filters:
             for p in f(self, precept):
                 yield p
-        """
-        yield precept
 
     def process_list(self, all_precepts):
         """
@@ -80,7 +79,7 @@ class GoapAgent(ObjectBase):
         # filter out goals that are not relevant (==0)
         # sort goals so that highest relevancy are first
         s = sorted(((g.get_relevancy(self.memory), g) for g in self.goals), reverse=True, key=lambda i: i[0])
-        s = [i for i in s if i[0]]
+        s = [i for i in s if i[0] > 0]
 
         debug("[agent] %s has goals %s", self, s)
 

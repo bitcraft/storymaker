@@ -36,7 +36,11 @@ class GoalBase:
             self.condition = None
 
         self.required_types = frozenset()
-        self.weight = 1.0
+
+        self.weight = kwargs.get('weight', None)
+        if self.weight is None:
+            self.weight = 1.0
+
         self.args = args
         self.kw = kwargs
 
@@ -68,21 +72,15 @@ class GoalBase:
             return "<Goal: {}>".format(self.__class__.__name__)
 
 
-class SimpleGoal(GoalBase):
+class WeightedGoal(GoalBase):
     """
-    Shorthand for creating simple DatumPrecept Goals
+    Goal will only use the weight to determine its relevancy
     """
     def test(self, memory):
-        total = 0.0
-        for precept in memory.of_class(DatumPrecept):
-            for item in self.kw.items():
-                if (precept.name, precept.value) == item:
-                    total += 1
-        return total / len(self.kw)
+        return 1.0
 
-    def touch(self, memory):
-        for item in self.kw.items():
-            memory.add(DatumPrecept(self.args[0], *item))
+    def get_relevancy(self, memory):
+        return self.weight
 
 
 class PreceptGoal(GoalBase):
@@ -117,6 +115,14 @@ class PreceptGoal(GoalBase):
 
     def touch(self, memory):
         memory.update(self.args)
+
+
+class AVPreceptGoal(PreceptGoal):
+    """
+    Goal is always relevant, but will work with a planner
+    """
+    def get_relevancy(self, memory):
+        return self.weight
 
 
 class EvalGoal(GoalBase):
