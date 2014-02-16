@@ -35,7 +35,8 @@ class GoapAgent(ObjectBase):
     def filter_precept(self, precept):
         """
         precepts can be put through filters to change them.
-        this can be used to simulate errors in judgement by the agent.
+        this can be used to simulate errors in judgement by the agent dropping the precept,
+        or maybe a condition or limitation of the agent
         """
         for f in self.filters:
             for p in f(self, precept):
