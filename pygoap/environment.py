@@ -179,7 +179,7 @@ class Environment(object):
                     #print("{} {} finished".format(context.caller, context))
                     context.touch()
                     context.caller.next_context()
-                    for _context in context.caller.current_context:
+                    for _context in context.caller.running_contexts:
                         context_put(_context)
 
                 else:

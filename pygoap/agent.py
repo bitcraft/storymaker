@@ -12,17 +12,13 @@ class GoapAgent(ObjectBase):
     """
     AI Agent
     """
-    # not implemented yet
-    idle_timeout = 30
+    idle_timeout = 30 # not implemented yet
 
     def __init__(self):
         super(GoapAgent, self).__init__()
         self.memory = MemoryManager()
-
         self.lock = threading.Lock()
-
         self.current_goal = None
-
         self.goals = set()          # all goals this instance can use
         self.abilities = set()      # all actions this agent can perform (defined by action contexts!)
         self.filters = []           # list of methods to use as a filter
@@ -94,12 +90,8 @@ class GoapAgent(ObjectBase):
 
     @property
     def running_contexts(self):
-        return self.current_context
-
-    @property
-    def current_context(self):
         """
-        get the current action of the current plan
+        get the current contexts of the current plan
         """
         try:
             return self.plan[-1]
