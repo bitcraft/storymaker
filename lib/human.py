@@ -28,8 +28,6 @@ def opposite_sex(agent, others):
 
 
 class AgeAbility(Action):
-    requires = [DatumPrecept]
-
     def get_actions(self, parent, memory=None):
         effects = []
         prereqs = []
@@ -55,8 +53,6 @@ class GiveBirthAbility(Action):
     """
     simulate birth
     """
-    requires = [DatumPrecept]
-
     def get_actions(self, parent, memory=None):
         effects = [PreceptGoal(DatumPrecept(parent, "has baby", True)),
                    PreceptGoal(DatumPrecept(parent, "ready to birth", False))]
@@ -74,8 +70,6 @@ class GestationAbility(Action):
     """
     simulate child gestation
     """
-    requires = [DatumPrecept]
-
     def get_actions(self, parent, memory=None):
         effects = [PreceptGoal(DatumPrecept(parent, "ready to birth", True))]
         prereqs = [PreceptGoal(DatumPrecept(parent, "had sex", True))]
@@ -90,8 +84,6 @@ class CopulateAbility(Action):
     """
     simulate sex
     """
-    requires = [DatumPrecept]
-
     def get_actions(self, parent, memory=None):
         for other in opposite_sex(parent, get_known_agents(parent)):
             if not other.sex == parent.sex:
