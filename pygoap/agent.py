@@ -12,7 +12,6 @@ class GoapAgent(ObjectBase):
     """
     AI Agent
     """
-    idle_timeout = 30  # not implemented yet
 
     def __init__(self):
         super(GoapAgent, self).__init__()
