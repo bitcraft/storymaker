@@ -23,7 +23,6 @@ class GoapAgent(ObjectBase):
     def __init__(self):
         super(GoapAgent, self).__init__()
         self.memory = MemoryManager()
-        self.planner = plan
 
         self.lock = threading.Lock()
 
@@ -39,7 +38,6 @@ class GoapAgent(ObjectBase):
 
     def reset(self):
         self.memory = MemoryManager()
-        self.planner = plan
         self.current_goal = None
         self.goals = set()
         self.abilities = set()
@@ -92,7 +90,7 @@ class GoapAgent(ObjectBase):
         start_action = None
         self.plan = []
         for score, goal in s:
-            tentative_plan = self.planner(self, self.abilities, start_action, self.memory, goal)
+            tentative_plan = plan(self, self.abilities, start_action, self.memory, goal)
 
             if tentative_plan:
                 tentative_plan.pop(-1)
