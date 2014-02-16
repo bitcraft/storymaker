@@ -124,8 +124,6 @@ class SpeakAbility(Action):
                 raise StopIteration
             p = random.choice(list(memory))
             if p not in self.perception_map[parent]:
-                if p is None:
-                    print(memory, p)
                 self.perception_map[parent].append(p)  # assume when speaking all actors will receive the message
                 effects = [PreceptGoal(DatumPrecept(parent, "chatter", True))]
                 yield SpeakAction(parent, None, effects, precept=p)
@@ -208,7 +206,7 @@ class Human(GoapAgent):
 
         name = kwarg.get("name", None)
         if not name:
-            name = "Pathetic Human {} ({})".format(Human.population, self.sex)
+            name = "Pathetic Human #{:03d}".format(Human.population)
         self.name = name
 
         self.reset_moods()
