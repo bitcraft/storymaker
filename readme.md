@@ -29,12 +29,22 @@ _______________________________________________________________________________
 
 pyGoap is a small library for designing AI in Python.  The basic library is
 based off of a well-known idea of using graph searches to to create realistic
-agents in real-time.  Behavior is determined in real-time and is extremely open
-ended and well suited for emergent behaviors.
+agents.  Behavior is determined in real-time and is extremely open ended and
+well suited for emergent behaviors, but the performance is poor.
 
-This library is not complete, but is working as-is.  Please read 
+pyGOAP is complex.  It removes many assumptions that are made by many planning
+systems.  It is not designed to be fast, but to be interesting.
+
+Differences from some planners:
+- World state is not available to agents, though it is recorded.
+- Clues about the world state called "precepts" are distributed to agents.
+- Precepts are not guaranteed to be delivered, or even "correct".
+- Each agent has unique view of world state based on precepts they receive.
+- Agents make plans based on their own abilities and their incomplete knowledge.
+
+This library is not complete, but is working as-is.  Please read
 "About the Demo" for an introduction to the capabilities presented in metaphors
-about life.  FUN!
+about life.  "FUN!"
 
 
 ## Concepts
@@ -61,15 +71,16 @@ _______________________________________________________________________________
 
 Precepts are created by Actions and distributed by the environment.  Agents
 receive precepts and store them.  Precepts carry information that is specific
-to the type of precept (Speech, Action, etc).
+to the type of Action (Speech, Motion, Action, etc) and also include more
+abstract concepts such as knowledge of the world state (DatumPrecept) and
+interactions between Agents (PropositionPrecept, SpeechPrecept, etc).
 
 _______________________________________________________________________________
 ### Memory
-*Precepts remembered by an agent*
+*Memory is a set of Precepts stored by an agent*
 
-When an agent makes a plan, the memory is used to deduce the state of the agent
-and to choose the set of actions that will satisfy a goal.  Memory is simply
-a list of precepts that has been stored by an agent.
+When an agent makes a plan, the Memory is used to deduce the World State and
+to choose the set of actions that will satisfy a goal.
 
 In GOAP terminology, Memories replace Blackboards, but function differently.
 
@@ -77,21 +88,22 @@ _______________________________________________________________________________
 ### Ability
 *Agents have abilities: ability to swing swords, walk, talk, puke, etc.*  
 
-Abilities generate Contexts.  A collection of Abilities roughly forms what
-GOAP calls "Action Sets".
+Abilities generate Contexts.  Contexts generate Actions.  Actions generate
+Precepts.  Precepts for World State.
+
+A collection of Abilities roughly forms what GOAP calls "Action Sets".
 
 _______________________________________________________________________________
 ### Context
 *Context is an action, what is required, and what happens when it finishes.*  
 
-Contexts are created by Abilities.  Contexts are dynamic and are unique to the
-state of the Agent.
+Contexts are dynamic and are unique to the state of the Agent.
 
 In GOAP terminology, a Context is roughly the same as an Action.
 
 _______________________________________________________________________________
 ### Goal
-*Goals are a condition that the Agent wants to satisfy.*  
+*Goals are a condition that the Agent wants to satisfy. (mostly)*
 
 Agents can have any number of Goals.  
 Goals have:
@@ -120,8 +132,7 @@ environment and give the environment actions that they wish to carry out.
 Agents will search through all of it's Goals when it receives a new precept
 and find the Goal that is most "relevant".  If the Goal has changed (or perhaps
 there wasn't a goal in the first place), the Agent will attempt to create a
-plan that satisfies the Goal.  If it cannot, it will simply try again once
-a new precept is received from the environment.
+plan that satisfies the Goal.
 
 _______________________________________________________________________________
 ### Environment

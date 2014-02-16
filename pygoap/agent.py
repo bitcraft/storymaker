@@ -44,7 +44,7 @@ class GoapAgent(ObjectBase):
 
     def process_list(self, all_precepts):
         """
-        used by the environment to feed the agent precepts.
+        feed the agent precepts.  do not send a single precept otherwise strange errors will occur.
         """
         if not isinstance(all_precepts, (tuple, list, set)):
             all_precepts = [all_precepts]
@@ -53,6 +53,9 @@ class GoapAgent(ObjectBase):
             self.process(precept)
 
     def process(self, precept):
+        """
+        feed the agent one single precept.
+        """
         for this_precept in self.filter_precept(precept):
             debug("[agent] %s recv'd precept %s", self, this_precept)
             if not isinstance(precept, TimePrecept):
