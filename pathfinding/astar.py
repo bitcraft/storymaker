@@ -61,18 +61,13 @@ def search(start, finish, low, high):
                 _f = _g + calc_h(neighbor, finish)
                 if neighbor in open_list:
                     heap.remove(heap_index[neighbor])
-                    entry = (_f, neighbor)
-                    heap_index[neighbor] = entry
-                    if pushback:
-                        heappush(heap, pushback)
-                    pushback = entry
                 else:
                     open_list.add(neighbor)
-                    entry = (_f, neighbor)
-                    heap_index[neighbor] = entry
-                    if pushback:
-                        heappush(heap, pushback)
-                    pushback = entry
+                entry = (_f, neighbor)
+                heap_index[neighbor] = entry
+                if pushback:
+                    heappush(heap, pushback)
+                pushback = entry
     return []
 
 

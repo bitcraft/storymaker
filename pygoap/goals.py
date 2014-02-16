@@ -25,17 +25,10 @@ debug = logging.debug
 class GoalBase:
     """
     Goals:
-        can be tested
         can be relevant
-
-    Goals, ActionPrereqs and ActionEffects are now that same class.  They share
-    so much functionality that they have been combined into one class.
-
-    The only difference is how they are used.  If a goal is used by the planner
-    then that will be the final point of the plan.  if it is used in
-    conjunction with an action, then it will function as a prereq.
+        can be tested
+        has a touch
     """
-
     def __init__(self, *args, **kwargs):
         try:
             self.condition = args[0]
@@ -55,9 +48,6 @@ class GoalBase:
     def get_relevancy(self, memory):
         """
         will return the "relevancy" value for this goal/prereq.
-
-        as a general rule, the return value here should never equal
-        what is returned from test()
         """
         score = 1 - self.test(memory)
         return self.weight * score
@@ -68,18 +58,19 @@ class GoalBase:
         """
         memory = MemoryManager()
         self.touch(memory)
-        print(memory)
         assert not self.test(memory) == 0
 
     def __repr__(self):
-        return "<{}>".format(self.__class__.__name__)
+        try:
+            return "<Goal: {}>".format(self.name)
+        except AttributeError:
+            return "<Goal: {}>".format(self.__class__.__name__)
 
 
 class SimpleGoal(GoalBase):
     """
     Shorthand for creating simple DatumPrecept Goals
     """
-
     def test(self, memory):
         total = 0.0
         for precept in memory.of_class(DatumPrecept):
@@ -90,29 +81,27 @@ class SimpleGoal(GoalBase):
 
     def touch(self, memory):
         for item in self.kw.items():
-            p = DatumPrecept(self.args[0], *item)
             memory.add(DatumPrecept(self.args[0], *item))
-
-    def __repr__(self):
-        return "<{}=\"{}\">".format(self.__class__.__name__, self.kw)
 
 
 class PreceptGoal(GoalBase):
     """
-    Uses DatumPrecepts as a test
+    Uses Precepts as a test
     """
+    valid = (PositionPrecept, TimePrecept, DatumPrecept, ActionPrecept, SpeechPrecept, MoodPrecept)
 
     def __init__(self, *args, **kwargs):
         super(PreceptGoal, self).__init__(*args, **kwargs)
         assert (len(self.args) > 0)
         for a in self.args:
-            assert (
-            isinstance(a, (PositionPrecept, TimePrecept, DatumPrecept, ActionPrecept, SpeechPrecept, MoodPrecept)))
+            assert (isinstance(a, PreceptGoal.valid))
+        if kwargs.get("name", None):
+            self.name = kwargs['name']
 
     def test(self, memory):
         total = 0.0
-        for precept in memory.of_class(DatumPrecept):
-            if precept in self.args:
+        for precept in self.args:
+            if precept in memory:
                 total += 1
         return total / len(self.args)
 
@@ -125,7 +114,6 @@ class EvalGoal(GoalBase):
     uses what i think is a somewhat safe way of evaluating python statements.
     feel free to contact me if you have a better way
     """
-
     def test(self, memory):
         condition = self.args[0]
 
@@ -194,7 +182,6 @@ class AlwaysValidGoal(GoalBase):
     """
     Will always be valid.
     """
-
     def test(self, memory):
         return 1.0
 
@@ -203,7 +190,6 @@ class NeverValidGoal(GoalBase):
     """
     Will never be valid.
     """
-
     def test(self, memory):
         return 0.0
 
@@ -212,7 +198,6 @@ class PositionGoal(GoalBase):
     """
     This validator is for finding the position of objects.
     """
-
     def test(self, memory):
         """
         search memory for last known position of the target
@@ -264,7 +249,6 @@ class HasItemGoal(GoalBase):
 
     any other keyword will be evaluated against precepts in the memory passed.
     """
-
     def test(self, memory):
         for precept in memory.of_class(PositionPrecept):
             if precept.position[0] == 'self' and precept.entity == self.args[0]:

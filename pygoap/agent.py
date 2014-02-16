@@ -7,8 +7,6 @@ import threading
 
 debug = logging.debug
 
-NullAction = None
-
 
 # required to reduce memory usage
 def time_filter(precept):
@@ -27,8 +25,7 @@ class GoapAgent(ObjectBase):
         self.memory = MemoryManager()
         self.planner = plan
 
-        # if acquired, this lock will prevent this agent from planning
-        self.planning_lock = threading.Lock()
+        self.lock = threading.Lock()
 
         self.current_goal = None
 
@@ -58,44 +55,41 @@ class GoapAgent(ObjectBase):
             for p in f(self, precept):
                 yield p
 
-    def process(self, precept):
+    def process_list(self, all_precepts):
         """
         used by the environment to feed the agent precepts.
-        agents can respond by sending back an action to take.
         """
-        for precept in self.filter_precept(precept):
-            debug("[agent] %s recv'd precept %s", self, precept)
+        if not isinstance(all_precepts, (tuple, list, set)):
+            all_precepts = [all_precepts]
+
+        for precept in all_precepts:
+            self.process(precept)
+
+    def process(self, precept):
+        for this_precept in self.filter_precept(precept):
+            debug("[agent] %s recv'd precept %s", self, this_precept)
             if not isinstance(precept, TimePrecept):
                 self.memory.add(precept)
 
-        # threads or the environment may lock the planner for performance or data
-        # integrity reasons.  if the planner is locked, then silently return []
-        if self.planning_lock.acquire(False):
-            a = self.running_contexts()
-            if not a:
-                self.replan()
-            self.planning_lock.release()
-            return self.running_contexts()
+    # hack
+    def plan_if_needed(self):
+        if len(self.plan) == 0:
+            self.find_plan()
 
-        return []
-
-    def replan(self):
+    def find_plan(self):
         """
         force agent to re-evaluate goals and to formulate a plan
         """
         # get the relevancy of each goal according to the state of the agent
-        s = ((g.get_relevancy(self.memory), g) for g in self.goals)
-
-        # remove goals that are not important (relevancy == 0)
-        s = [g for g in s if g[0] > 0.0]
-
+        # filter out goals that are not relevant (==0)
         # sort goals so that highest relevancy are first
-        s.sort(reverse=True, key=lambda i: i[0])
+        s = sorted(
+            filter(None, ((g.get_relevancy(self.memory), g) for g in self.goals)),
+            reverse=True, key=lambda i: i[0])
 
         debug("[agent] %s has goals %s", self, s)
 
-        # starting from the most relevant goal, attempt to make a plan
-        start_action = NullAction
+        start_action = None
         self.plan = []
         for score, goal in s:
             tentative_plan = self.planner(self, self.abilities, start_action, self.memory, goal)
@@ -108,6 +102,7 @@ class GoapAgent(ObjectBase):
                 debug("[agent] %s has plan %s", self, self.plan)
                 break
 
+    @property
     def running_contexts(self):
         return self.current_context
 
@@ -124,8 +119,6 @@ class GoapAgent(ObjectBase):
     def next_context(self):
         """
         force the agent to stop the current action (context) and start the next one
-
-        used by the environment.
         """
         try:
             self.plan.pop(-1)

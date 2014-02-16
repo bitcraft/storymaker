@@ -53,7 +53,7 @@ class AgeAction(Action):
 
     def update(self, dt):
         self.age += dt
-
+        yield None
 
 class GiveBirthAbility(Ability):
     """
@@ -119,8 +119,6 @@ class CopulateAction(Action):
 class SpeakAbility(Ability):
     """
     examine caller's memory and create some things to say
-
-    any agent who "hears" the action will have the precept added to their memory
     """
     # perception will be moved in to another class someday
     def __init__(self):
@@ -220,10 +218,9 @@ class Human(GoapAgent):
         Human.population += 1
 
     def reset_moods(self):
-        with self.planning_lock:
-            for name in Human.mood_names:
-                p = MoodPrecept(self, name, float())
-                self.process(p)
+        for name in Human.mood_names:
+            p = MoodPrecept(self, name, float())
+            self.process(p)
 
     def reset(self):
         super(Human, self).reset()
@@ -255,15 +252,15 @@ class Human(GoapAgent):
         add goals that are inherent to humans
         """
         if self.sex:
-            baby_goal = PreceptGoal(DatumPrecept(self, "has baby", True))
+            baby_goal = PreceptGoal(DatumPrecept(self, "has baby", True), name="baby")
             self.goals.add(baby_goal)
 
         if self.traits.touchy > 0:
-            copulate_goal = PreceptGoal(DatumPrecept(self, "had sex", True))
+            copulate_goal = PreceptGoal(DatumPrecept(self, "had sex", True), name="sex")
             self.goals.add(copulate_goal)
 
         if self.traits.chatty > 0:
-            chatter_goal = PreceptGoal(DatumPrecept(self, "chatter", True))
+            chatter_goal = PreceptGoal(DatumPrecept(self, "chatter", True), name="chatty")
             self.goals.add(chatter_goal)
 
     def birth(self):

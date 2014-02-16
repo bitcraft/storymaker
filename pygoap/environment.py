@@ -70,11 +70,6 @@ class Environment(object):
     def get_position(self, entity):
         raise NotImplementedError
 
-    # this is a placeholder hack.  proper handling will go through model_precept()
-    def look(self, caller):
-        for i in chain(self._entities, self._agents):
-            caller.process(PositionPrecept(i, self._positions[i]))
-
     def add(self, entity, position=None):
         """
         Add an entity to the environment
@@ -85,13 +80,8 @@ class Environment(object):
 
         # hackish way to force agents to re-evaluate their environment
         for a in self._agents:
-            to_remove = []
-
-            for p in a.memory.of_class(DatumPrecept):
-                if p.name == 'aware':
-                    to_remove.append(p)
-
-            [a.memory.remove(p) for p in to_remove]
+            for i in [p for p in a.memory.of_class(DatumPrecept) if p.name == 'aware']:
+                a.memory.remove(i)
 
         # add the agent
         if isinstance(entity, GoapAgent):
@@ -99,11 +89,8 @@ class Environment(object):
             entity.environment = self
             self._positions[entity] = (None, (0, 0))
 
-            # clever hack to let the planner know who the memory belongs to
-            # acquiring the planning lock here prevents the entity from forming a plan.
-            # this is ** required ** since we are not handling return actions here.
-            with entity.planning_lock:
-                entity.process(DatumPrecept(entity, 'name', entity.name))
+            # hack to let the planner know who the memory belongs to
+            entity.process(DatumPrecept(entity, 'name', entity.name))
         else:
             self._entities.append(entity)
 
@@ -122,31 +109,44 @@ class Environment(object):
         self.time += dt
 
         # let all the agents know that time has passed
-        t_precept = TimePrecept(self.time)
+        self._precept_queue.put(TimePrecept(self.time))
 
-        # speedier version of broadcast_precepts(); just send out time precepts
-        put_context = self._context_queue.put
-        for agent in self.agents:
-            for context in agent.process(t_precept):
-                put_context(context)
-
-        self.handle_actions(dt)
         self.handle_precepts()
+
+        context_put = self._context_queue.put
+        for agent in self.agents:
+            agent.plan_if_needed()
+            for context in agent.running_contexts:
+                context_put(context)
+
+        self.handle_contexts(dt)
 
     def handle_precepts(self):
         """
         process all of the precepts in the queue
         """
-        l = []
+        l = set()
         get_precept = self._precept_queue.get
         while 1:
             try:
-                l.append(get_precept(False))
+                l.add(get_precept(False))
             except queue.Empty:
                 self.broadcast_precepts(l)
                 break
 
-    def handle_actions(self, dt):
+    def broadcast_precepts(self, precepts):
+        """
+        broadcast and model a list of precepts
+        """
+        model_precepts = self.model_precepts
+
+        for p in precepts:
+            self.broadcast_hook(p)
+
+        for agent in self._agents:
+            agent.process_list(model_precepts(precepts, agent))
+
+    def handle_contexts(self, dt):
         """
         process all of the actions in the queue
         """
@@ -154,12 +154,12 @@ class Environment(object):
         touched = set()
 
         # deref for speed
-        get_context = self._context_queue.get
-        put_context = self._context_queue.put
-        put_precept = self._precept_queue.put
+        context_get = self._context_queue.get
+        context_put = self._context_queue.put
+        precept_put = self._precept_queue.put
         while 1:
             try:
-                context = get_context(False)
+                context = context_get(False)
 
             except queue.Empty:
                 self._context_queue = next_queue
@@ -173,14 +173,14 @@ class Environment(object):
 
                 #print("{} doing {}".format(context.caller, context))
                 for precept in context.action.step(dt):
-                    put_precept(precept)
+                    precept_put(precept)
 
                 if context.action.finished:
                     #print("{} {} finished".format(context.caller, context))
                     context.touch()
                     context.caller.next_context()
-                    for action in context.caller.current_context:
-                        put_context(action)
+                    for _context in context.caller.current_context:
+                        context_put(_context)
 
                 else:
                     next_queue.put(context)
@@ -192,31 +192,15 @@ class Environment(object):
         """
         return context
 
-    def broadcast_precepts(self, precepts):
-        """
-        broadcast and model a list of precepts
-        """
-        model_precept = self.model_precept
-        model_context = self.model_context
-        put_context = self._context_queue.put
-
-        for p in precepts:
-            self.broadcast_hook(p)
-            for agent in self._agents:
-                for context in agent.process(model_precept(p, agent)):
-                    context = model_context(context)
-                    if context:
-                        put_context(context)
-
     def broadcast_hook(self, p):
         if isinstance(p, SpeechPrecept):
             msg = '{:>12} {}'.format('{}:'.format(p.entity.name), p.message)
             print(msg)
 
-    def model_precept(self, precept, other):
+    def model_precepts(self, precepts, other):
         """
         override this to model the way that precept objects move in the
         simulation.  by default, all precept objects will be distributed
         indiscriminately to all agents.
         """
-        return precept
+        return precepts

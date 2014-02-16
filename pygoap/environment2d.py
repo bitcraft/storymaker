@@ -12,7 +12,7 @@ is up to you to make it useful.
 from pygoap.agent import GoapAgent
 from pygoap.environment import Environment
 from pygoap.precepts import *
-from pathfinding.astar import search, Node
+from pathfinding.astar import search
 import random, math
 
 
