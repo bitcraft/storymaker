@@ -110,7 +110,7 @@ class GoapAgent(ObjectBase):
 
     def next_action(self):
         """
-        force the agent to stop the current action (context) and start the next one
+        force the agent to stop the current action (context) and start the next onz2wsx2
         """
         try:
             self.plan.pop(-1)
