@@ -8,23 +8,24 @@ environment simply provides enough basic information to the agents to work.  It
 is up to you to make it useful.
 """
 
-from pygoap.precepts import *
 from itertools import chain
 import logging
 import queue
-import collections
+
+from pygoap.precepts import *
+
 
 debug = logging.debug
 
 
-class ObjectBase(object):
+class ObjectBase:
     """
     class for objects that agents can interact with
     """
     name = 'noname'
 
     def __init__(self):
-        self._condition = {}
+        pass
 
     def get_actions(self, other):
         """
@@ -32,20 +33,11 @@ class ObjectBase(object):
         """
         return []
 
-    def condition(self, name):
-        try:
-            return self._condition[name]
-        except KeyError:
-            return False
-
-    def set_condition(self, name, value):
-        self._condition[name] = value
-
     def __repr__(self):
         return "<Object: {}>".format(self.name)
 
 
-class Environment(object):
+class Environment:
     """
     Abstract class representing an Environment.
     'Real' Environment classes inherit from this
@@ -74,7 +66,6 @@ class Environment(object):
         """
         Add an entity to the environment
         """
-        from pygoap.agent import GoapAgent
 
         debug("[env] adding %s", entity)
 
@@ -167,13 +158,11 @@ class Environment(object):
 
                 touched.add(action)
 
-                #print("{} doing {}".format(action.parent, action))
                 for precept in action.step(dt):
                     if precept:
                         precept_put(precept)
 
                 if action.finished:
-                    #print("{} {} finished".format(action.parent, action))
                     action.touch()
                     action.parent.next_action()
                     for _action in action.parent.running_actions:
@@ -190,9 +179,12 @@ class Environment(object):
         return action
 
     def broadcast_hook(self, p):
+        # HACK: This print statement is used because there is no API for agents
+        #       to send speech to the console for debugging.
         if isinstance(p, SpeechPrecept):
             msg = '{:>12} {}'.format('{}:'.format(p.entity.name), p.message)
             print(msg)
+        pass
 
     def model_precepts(self, precepts, other):
         """

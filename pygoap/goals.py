@@ -14,10 +14,12 @@ touch() should modify a memory in some meaningful way as if the action was
 finished successfully.
 """
 
+import logging
+
 from pygoap.memory import MemoryManager
 from pygoap.environment2d import distance
 from pygoap.precepts import *
-import logging
+
 
 debug = logging.debug
 
@@ -29,6 +31,7 @@ class GoalBase:
         can be tested
         has a touch
     """
+
     def __init__(self, *args, **kwargs):
         try:
             self.condition = args[0]
@@ -76,6 +79,7 @@ class WeightedGoal(GoalBase):
     """
     Goal will only use the weight to determine its relevancy
     """
+
     def test(self, memory):
         return 1.0
 
@@ -87,7 +91,9 @@ class PreceptGoal(GoalBase):
     """
     Uses Precepts as a test
     """
-    valid = (PositionPrecept, TimePrecept, DatumPrecept, ActionPrecept, SpeechPrecept, MoodPrecept)
+    valid = (
+    PositionPrecept, TimePrecept, DatumPrecept, ActionPrecept, SpeechPrecept,
+    MoodPrecept)
 
     def __init__(self, *args, **kwargs):
         super(PreceptGoal, self).__init__(*args, **kwargs)
@@ -121,6 +127,7 @@ class AVPreceptGoal(PreceptGoal):
     """
     Goal is always relevant, but will work with a planner
     """
+
     def get_relevancy(self, memory):
         return self.weight
 
@@ -130,6 +137,7 @@ class EvalGoal(GoalBase):
     uses what i think is a somewhat safe way of evaluating python statements.
     feel free to contact me if you have a better way
     """
+
     def test(self, memory):
         condition = self.args[0]
 
@@ -149,7 +157,7 @@ class EvalGoal(GoalBase):
 
         try:
             side0 = float(eval(" ".join(expr[:index]), memory))
-            side1 = float(eval(" ".join(expr[index+1:]), memory))
+            side1 = float(eval(" ".join(expr[index + 1:]), memory))
         except NameError:
             return 0.0
 
@@ -198,6 +206,7 @@ class AlwaysValidGoal(GoalBase):
     """
     Will always be valid.
     """
+
     def test(self, memory):
         return 1.0
 
@@ -206,6 +215,7 @@ class NeverValidGoal(GoalBase):
     """
     Will never be valid.
     """
+
     def test(self, memory):
         return 0.0
 
@@ -214,6 +224,7 @@ class PositionGoal(GoalBase):
     """
     This validator is for finding the position of objects.
     """
+
     def test(self, memory):
         """
         search memory for last known position of the target
@@ -265,11 +276,12 @@ class HasItemGoal(GoalBase):
 
     any other keyword will be evaluated against precepts in the memory passed.
     """
+
     def test(self, memory):
         for precept in memory.of_class(PositionPrecept):
             if precept.position[0] == 'self' and precept.entity == self.args[0]:
                 return 1.0
-        
+
         return 0.0
 
     def touch(self, memory):

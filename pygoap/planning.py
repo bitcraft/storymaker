@@ -1,6 +1,8 @@
-from pygoap.memory import MemoryManager
 from heapq import heappop, heappush, heappushpop
 import logging
+
+from pygoap.memory import MemoryManager
+
 
 debug = logging.debug
 
@@ -74,6 +76,7 @@ def plan(key_node, goal):
     open_list = set()
     closed_list = set()
 
+    # the pushback minimizes heap use and provides a modest speed improvement
     pushback = (0, heap_counter, key_node)
     open_list.add(key_node)
 

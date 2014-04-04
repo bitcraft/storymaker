@@ -1,9 +1,11 @@
+import logging
+import threading
+
 from pygoap.environment import ObjectBase
 from pygoap.planning import PlanningNode, plan
 from pygoap.memory import MemoryManager
 from pygoap.precepts import *
-import logging
-import threading
+
 
 debug = logging.debug
 
@@ -75,7 +77,8 @@ class GoapAgent(ObjectBase):
         # get the relevancy of each goal according to the state of the agent
         # filter out goals that are not relevant (==0)
         # sort goals so that highest relevancy are first
-        s = sorted(((g.get_relevancy(self.memory), g) for g in self.goals), reverse=True, key=lambda i: i[0])
+        s = sorted(((g.get_relevancy(self.memory), g) for g in self.goals),
+                   reverse=True, key=lambda i: i[0])
         s = [i for i in s if i[0] > 0]
 
         debug("[agent] %s has goals %s", self, s)
@@ -83,7 +86,8 @@ class GoapAgent(ObjectBase):
         start_action = None
         self.plan = []
         for score, goal in s:
-            node = PlanningNode(None, start_action, self.abilities, self.delta, agent=self)
+            node = PlanningNode(None, start_action, self.abilities, self.delta,
+                                agent=self)
             tentative_plan = plan(node, goal)
 
             if tentative_plan:

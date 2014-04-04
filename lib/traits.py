@@ -31,13 +31,11 @@ class Traits:
     """
     Traits are generally not modified, and goals should not normally be
     triggered by changes or the state of a trait.
-
-    They are not able to be used in the planning process (yet??)
     """
     default = [
         "strength",
         "perception",
-        "endurance",      # endurance is used to modify hunger
+        "endurance", # endurance is used to modify hunger
         "charisma",
         "intelligence",
         "agility",

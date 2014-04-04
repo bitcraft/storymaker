@@ -20,7 +20,7 @@ TimePrecept = nt('TimePrecept', 'time')
 DatumPrecept = nt('DatumPrecept', 'entity, name, value')
 
 # used to query another agent
-QuestionPrecept = nt('QuestionPrecept', 'entity, name, value')
+QueryPrecept = nt('QueryPrecept', 'entity, name, value')
 
 # used to remember "seeing" (or hearing) an action performed
 ActionPrecept = nt('ActionPrecept', 'entity, action, object')

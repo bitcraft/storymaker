@@ -9,21 +9,23 @@ environment simply provides enough basic information to the agents to work.  It
 is up to you to make it useful.
 """
 
-from pygoap.agent import GoapAgent
+import random
+import math
+
 from pygoap.environment import Environment
 from pygoap.precepts import *
 from pathfinding.astar import search
-import random, math
-
 
 
 def distance(a, b):
     "The distance between two (x, y) points."
     return math.hypot((a[0] - b[0]), (a[1] - b[1]))
 
+
 def distance2(a, b):
     "The square of the distance between two (x, y) points."
-    return (a[0] - b[0])**2 + (a[1] - b[1])**2
+    return (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2
+
 
 def clip(vector, lowest, highest):
     """Return vector, except if any element is less than the corresponding
@@ -35,21 +37,22 @@ def clip(vector, lowest, highest):
     return type(vector)(map(min, map(max, vector, lowest), highest))
 
 
-class Pathfinding2D(object):
+class Pathfinding2D:
     def get_surrounding(self, position):
         """
         Return all positions around this one.
         """
         x, y = position
 
-        return ((x-1, y-1), (x-1, y), (x-1, y+1), (x, y-1), (x, y+1),
-                (x+1, y-1), (x+1, y), (x+1, y+1))
-                
+        return (
+        (x - 1, y - 1), (x - 1, y), (x - 1, y + 1), (x, y - 1), (x, y + 1),
+        (x + 1, y - 1), (x + 1, y), (x + 1, y + 1))
+
     def calc_h(self, position1, position2):
         return distance(position1, position2)
 
     def factory(self, position):
-        
+
         # EPIC HACK
         # fix this when position conventions are standardized
         try:
@@ -59,7 +62,7 @@ class Pathfinding2D(object):
                 x, y = position
         except TypeError:
             x, y = position
-                
+
         return Node((x, y))
 
 
@@ -122,7 +125,7 @@ class Environment2D(Environment, Pathfinding2D):
 
         radius2 = radius * radius
         return [obj for obj in self.entities
-                if distance2(position, obj.position) <= radius2 ]
+                if distance2(position, obj.position) <= radius2]
 
     def default_position(self):
         loc = (random.randint(0, self.width), random.randint(0, self.height))
@@ -152,4 +155,4 @@ class Environment2D(Environment, Pathfinding2D):
         return a path from start to finish
         """
 
-        return search(start, finish, self.factory) 
+        return search(start, finish, self.factory)

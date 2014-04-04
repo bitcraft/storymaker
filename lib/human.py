@@ -1,13 +1,15 @@
 __author__ = 'Leif'
 
+from collections import defaultdict
+import random
+
 from pygoap.agent import GoapAgent
 from pygoap.actions import Action
 from pygoap.goals import *
 from pygoap.precepts import *
 from lib.english import make_english
 from lib.traits import *
-from collections import defaultdict
-import random
+
 
 
 # get all known entities at this point
