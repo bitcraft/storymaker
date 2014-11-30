@@ -1,4 +1,6 @@
-__author__ = 'Leif'
+"""
+set of actions and functions related to human society
+"""
 
 
 class Condition:

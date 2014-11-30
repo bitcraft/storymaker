@@ -91,9 +91,8 @@ class PreceptGoal(GoalBase):
     """
     Uses Precepts as a test
     """
-    valid = (
-    PositionPrecept, TimePrecept, DatumPrecept, ActionPrecept, SpeechPrecept,
-    MoodPrecept)
+    valid = (PositionPrecept, TimePrecept, DatumPrecept, ActionPrecept,
+             SpeechPrecept, MoodPrecept)
 
     def __init__(self, *args, **kwargs):
         super(PreceptGoal, self).__init__(*args, **kwargs)
@@ -190,7 +189,7 @@ class EvalGoal(GoalBase):
 
             return d
 
-        d = {}
+        d = dict()
         d['__builtins__'] = None
 
         for k, v in d.items():

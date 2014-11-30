@@ -1,9 +1,6 @@
-__author__ = 'Leif'
-
-
 class Storyboard:
     def __init__(self):
-        self.sketches = []
+        self.sketches = list()
 
 
 class Sketch:
@@ -37,10 +34,6 @@ class Plot:
     pass
 
 
-import sqlite3
-import os
-
-
 class Storyteller:
     """
     images:
@@ -56,22 +49,4 @@ class Storyteller:
                 intensity (float)
     """
 
-    db_fn = 'images/images.db'
 
-    def __init__(self):
-        self.conn = None
-        self.new_db()
-
-    def init_db(self):
-        self.conn = sqlite3.connect(self.db_fn)
-        with self.conn:
-            c = self.conn.cursor()
-            c.execute('CREATE TABLE ImagesMeta(FileName TEXT, Price INT)')
-
-    def new_db(self):
-        self.conn = None
-        try:
-            os.unlink(self.db_fn)
-        except FileNotFoundError:
-            pass
-        self.init_db()

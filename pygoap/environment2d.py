@@ -18,12 +18,12 @@ from pathfinding.astar import search
 
 
 def distance(a, b):
-    "The distance between two (x, y) points."
+    """The distance between two (x, y) points."""
     return math.hypot((a[0] - b[0]), (a[1] - b[1]))
 
 
 def distance2(a, b):
-    "The square of the distance between two (x, y) points."
+    """The square of the distance between two (x, y) points."""
     return (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2
 
 
@@ -34,25 +34,27 @@ def clip(vector, lowest, highest):
     >>> clip((-1, 10), (0, 0), (9, 9))
     (0, 9)
     """
-    return type(vector)(map(min, map(max, vector, lowest), highest))
+    raise NotImplementedError
 
 
 class Pathfinding2D:
-    def get_surrounding(self, position):
+
+    @staticmethod
+    def get_surrounding(position):
         """
         Return all positions around this one.
         """
         x, y = position
 
-        return (
-        (x - 1, y - 1), (x - 1, y), (x - 1, y + 1), (x, y - 1), (x, y + 1),
-        (x + 1, y - 1), (x + 1, y), (x + 1, y + 1))
+        return ((x - 1, y - 1), (x - 1, y), (x - 1, y + 1), (x, y - 1),
+                (x, y + 1), (x + 1, y - 1), (x + 1, y), (x + 1, y + 1))
 
-    def calc_h(self, position1, position2):
+    @staticmethod
+    def calc_h(position1, position2):
         return distance(position1, position2)
 
-    def factory(self, position):
-
+    @staticmethod
+    def factory(position):
         # EPIC HACK
         # fix this when position conventions are standardized
         try:
@@ -67,15 +69,14 @@ class Pathfinding2D:
 
 
 class Environment2D(Environment, Pathfinding2D):
-    """
-    This class is for environments on a 2D plane.
+    """Environments on a 2D plane.
 
     This class is featured enough to run a simple simulation.
     """
 
     def __init__(self, width=10, height=10):
         super(Environment2D, self).__init__()
-        self._positions = {}
+        self._positions = dict()
         self.width = width
         self.height = height
 
@@ -129,7 +130,7 @@ class Environment2D(Environment, Pathfinding2D):
 
     def default_position(self):
         loc = (random.randint(0, self.width), random.randint(0, self.height))
-        return (self, loc)
+        return self, loc
 
     def model_precept(self, precept, other):
         return precept
@@ -141,7 +142,7 @@ class Environment2D(Environment, Pathfinding2D):
         """
 
         x, y = agent.environment.get_position(agent)[1]
-        pos = []
+        pos = list()
 
         for xx in xrange(x - dist, x + dist):
             for yy in xrange(y - dist, y + dist):
@@ -154,5 +155,4 @@ class Environment2D(Environment, Pathfinding2D):
         """
         return a path from start to finish
         """
-
         return search(start, finish, self.factory)

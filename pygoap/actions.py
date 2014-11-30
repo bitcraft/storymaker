@@ -10,12 +10,10 @@ class ActionException(Exception):
 class Action:
     """
     Action / Operator
-
-    I just don't even know anymore
     """
     default_duration = 1
-    provides = []
-    requires = []
+    provides = list()
+    requires = list()
     domain = None
 
     def __init__(self, parent, prereqs=None, effects=None, name=None, memory=None, **kwargs):
@@ -24,11 +22,11 @@ class Action:
 
         self.prereqs = prereqs
         if self.prereqs is None:
-            self.prereqs = []
+            self.prereqs = list()
 
         self.effects = effects
         if self.effects is None:
-            self.effects = []
+            self.effects = list()
 
         self.memory = memory
         if self.memory is None:
@@ -73,14 +71,14 @@ class Action:
 
     def get_actions(self, parent, memory=None):
         """
-        Return a generator of child abilities, or [] if this can make changes to world state
+        Return a generator of child abilities, or empty list if this can make
+        changes to world state
         """
-        return []
+        return list()
 
     def pretest(self, memory):
         """
         Convenience function to pretest a Memory with all prereqs
-
         A pretest is a quicker test that should be called on a Memory delta
         """
         for prereq in self.prereqs:

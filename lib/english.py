@@ -1,9 +1,7 @@
-__author__ = 'Leif'
-
 from pygoap.precepts import *
 
 
-def try_name(p):
+def name(p):
     try:
         return p.name
     except AttributeError:
@@ -22,28 +20,32 @@ def make_english(caller, p):
             if p.name == "name":
                 return "My name is {}.".format(p.value)
 
-            return "I {} is {}.".format(p.name, try_name(p.value))
+            return "I {} is {}.".format(p.name, name(p.value))
 
         elif p.entity is None:
-            return "Did you know that {} is {}?".format(p.name, try_name(p.value))
+            return "Did you know that {} is {}?".format(p.name,
+                                                        name(p.value))
 
         else:
             if p.name == "name":
                 return "His name is {}.".format(p.value)
 
-            return "Did you know that {}\'s {} is {}?".format(try_name(p.entity), p.name, try_name(p.value))
+            return "Did you know that {}\'s {} is {}?".format(
+                name(p.entity), p.name, name(p.value))
 
     elif isinstance(p, ActionPrecept):
         if p.entity is caller:
             if p.object is None:
                 return "I did {}!".format(p.action)
             else:
-                return "I did {} with {}!".format(p.action, try_name(p.object))
+                return "I did {} with {}!".format(p.action, name(p.object))
         else:
             if p.object is None:
                 return "I saw {} doing {}!".format(p.entity.name, p.action)
             else:
-                return "I saw {} doing {} with {}!".format(p.entity.name, p.action, try_name(p.object))
+                return "I saw {} doing {} with {}!".format(p.entity.name,
+                                                           p.action,
+                                                           name(p.object))
 
     elif isinstance(p, SpeechPrecept):
         if p.entity is caller:
@@ -64,8 +66,9 @@ def make_english(caller, p):
 
         else:
             if p.value < .5:
-                return '{} is feeling not {}.'.format(try_name(p.entity), p.name)
+                return '{} is feeling not {}.'.format(name(p.entity),
+                                                      p.name)
             else:
-                return '{} is feeling {}.'.format(try_name(p.entity), p.name)
+                return '{} is feeling {}.'.format(name(p.entity), p.name)
     else:
         return "I don't know how to express [{}].".format(p)

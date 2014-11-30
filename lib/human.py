@@ -1,7 +1,7 @@
-__author__ = 'Leif'
-
+"""
+set of actions and functions related to human abilities
+"""
 from collections import defaultdict
-import random
 
 from pygoap.agent import GoapAgent
 from pygoap.actions import Action
@@ -9,7 +9,6 @@ from pygoap.goals import *
 from pygoap.precepts import *
 from lib.english import make_english
 from lib.traits import *
-
 
 
 # get all known entities at this point
@@ -31,8 +30,8 @@ def opposite_sex(agent, others):
 
 class AgeAbility(Action):
     def get_actions(self, parent, memory=None):
-        effects = []
-        prereqs = []
+        effects = list()
+        prereqs = list()
         action = AgeAction()
         context = ActionContext(parent, action, prereqs, effects)
         yield context
@@ -42,6 +41,7 @@ class AgeAction(Action):
     """
     simulate human aging
     """
+
     def __init__(self, *arg, **kwarg):
         super(AgeAction, self).__init__(*arg, **kwarg)
         self.age = 0
@@ -55,6 +55,7 @@ class GiveBirthAbility(Action):
     """
     simulate birth
     """
+
     def get_actions(self, parent, memory=None):
         effects = [PreceptGoal(DatumPrecept(parent, "has baby", True)),
                    PreceptGoal(DatumPrecept(parent, "ready to birth", False))]
@@ -72,6 +73,7 @@ class GestationAbility(Action):
     """
     simulate child gestation
     """
+
     def get_actions(self, parent, memory=None):
         effects = [PreceptGoal(DatumPrecept(parent, "ready to birth", True))]
         prereqs = [PreceptGoal(DatumPrecept(parent, "had sex", True))]
@@ -86,6 +88,7 @@ class CopulateAbility(Action):
     """
     simulate sex
     """
+
     def get_actions(self, parent, memory=None):
         for other in opposite_sex(parent, get_known_agents(parent)):
             if not other.sex == parent.sex:
@@ -98,7 +101,7 @@ class CopulateAction(Action):
     def __init__(self, *args, **kwargs):
         super(CopulateAction, self).__init__(*args, **kwargs)
         self.other = kwargs.get('other', None)
-        assert(self.other is not None)
+        assert (self.other is not None)
 
     def update(self, dt):
         yield ActionPrecept(self.parent, "sex", self.other)
@@ -108,6 +111,7 @@ class SpeakAbility(Action):
     """
     examine parent's memory and create some things to say
     """
+
     def __init__(self, *args, **kwargs):
         super(SpeakAbility, self).__init__(*args, **kwargs)
         self.perception_map = defaultdict(list)
@@ -118,7 +122,8 @@ class SpeakAbility(Action):
                 raise StopIteration
             p = random.choice(list(memory))
             if p not in self.perception_map[parent]:
-                self.perception_map[parent].append(p)  # assume when speaking all actors will receive the message
+                # assume when speaking all actors will receive the message
+                self.perception_map[parent].append(p)
                 effects = [PreceptGoal(DatumPrecept(parent, "chatter", True))]
                 yield SpeakAction(parent, None, effects, precept=p)
 
@@ -127,18 +132,20 @@ class SpeakAction(Action):
     def __init__(self, *args, **kwargs):
         super(SpeakAction, self).__init__(*args, **kwargs)
         self.p = kwargs.get('precept', None)
-        assert(self.p is not None)
+        assert (self.p is not None)
 
     def update(self, dt):
         msg = SpeechPrecept(self.parent, make_english(self.parent, self.p))
-        yield msg     # return a speech precept
-        yield self.p  # return a the original precept (simulates passing of information through speech)
+        yield msg  # return a speech precept
+        # return the original precept (simulates passing of info through speech)
+        yield self.p
 
 
 class TeleSend(Action):
     """
     Telepathic Communication (a joke!)
     """
+
     def __init__(self, p, *arg, **kwarg):
         super(TeleSend, self).__init__(*arg, **kwarg)
         self.p = p
@@ -157,8 +164,8 @@ class Preferences:
 # filters should modify the agent's traits or mood
 def copulate_filter(agent, p):
     try:
-        assert(isinstance(p, ActionPrecept))
-        assert(p.entity is agent)
+        assert (isinstance(p, ActionPrecept))
+        assert (p.entity is agent)
     except AssertionError:
         return [p]
 
@@ -166,7 +173,7 @@ def copulate_filter(agent, p):
 
     value = 0
 
-    to_remove = []
+    to_remove = list()
     for mp in agent.memory.of_class(MoodPrecept):
         if mp.entity is agent and mp.name == 'content':
             value += mp.value
@@ -185,7 +192,7 @@ def copulate_filter(agent, p):
 
 def conversation_filter(agent, p):
     try:
-        assert(isinstance(p, SpeechPrecept))
+        assert (isinstance(p, SpeechPrecept))
     except AssertionError:
         yield p
         raise StopIteration
@@ -199,10 +206,10 @@ def conversation_filter(agent, p):
 
 class Moods(Traits):
     default = (
-        "content",     # low values cause agent to seek another activity
-        "hunger",      # negative requires food
-        "rested",      # negative requires sleep
-        "stressed",    # high values affect behaviour
+        "content",  # low values cause agent to seek another activity
+        "hunger",  # negative requires food
+        "rested",  # negative requires sleep
+        "stressed",  # high values affect behaviour
     )
 
 
@@ -212,7 +219,7 @@ class Human(GoapAgent):
     def __init__(self, **kwarg):
         super(Human, self).__init__()
         self.traits = Traits()
-        self.moods = None                   # will get set later in model_moods()
+        self.moods = None
         self.sex = kwarg.get("sex", 0)
 
         name = kwarg.get("name", None)
@@ -252,7 +259,7 @@ class Human(GoapAgent):
             self.abilities.add(GestationAbility(self))
             self.abilities.add(GiveBirthAbility(self))
 
-        #self.abilities.add(AgeAbility(self))
+        # self.abilities.add(AgeAbility(self))
         self.abilities.add(SpeakAbility(self))
         self.abilities.add(CopulateAbility(self))
 
@@ -264,7 +271,8 @@ class Human(GoapAgent):
         add goals that are inherent to humans
         """
         if self.sex:
-            goal = PreceptGoal(DatumPrecept(self, "has baby", True), name="baby")
+            goal = PreceptGoal(DatumPrecept(self, "has baby", True),
+                               name="baby")
             self.goals.add(goal)
 
         if self.traits.touchy > 0:
@@ -272,8 +280,9 @@ class Human(GoapAgent):
             self.goals.add(goal)
 
         if self.traits.chatty > 0:
-            goal = AVPreceptGoal(DatumPrecept(self, "chatter", True), name="chatty", weight=self.moods.content)
-            #goal = WeightedGoal(weight=self.moods.content)
+            goal = AVPreceptGoal(DatumPrecept(self, "chatter", True),
+                                 name="chatty", weight=self.moods.content)
+            # goal = WeightedGoal(weight=self.moods.content)
             self.goals.add(goal)
 
     def birth(self):

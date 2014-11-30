@@ -1,9 +1,7 @@
 from heapq import heappop, heappush, heappushpop
-import logging
-
 from pygoap.memory import MemoryManager
 
-
+import logging
 debug = logging.debug
 
 
@@ -66,13 +64,12 @@ def plan(key_node, goal):
     Return a list of contexts that could be called to satisfy the goal.
     Cannot duplicate contexts in the plan
     """
-
-    # heap_counter works around a 'bug' in python 3.x where the next value in a tuple
-    # is compared if the current set are equal.  using heap_counter ensures that the
-    # planning nodes will never be compared (which raises a an exception!)
-    heap = []
-    heap_index = {}
+    # heap_counter works around a 'bug' in python 3.x where the next value in a
+    # tuple is compared if the current set are equal.  using heap_counter
+    # ensures that the planning nodes will never be compared.
+    heap = list()
     heap_counter = 0
+    heap_index = dict()
     open_list = set()
     closed_list = set()
 
@@ -110,7 +107,7 @@ def plan(key_node, goal):
                     heappush(heap, pushback)
                 pushback = entry
     else:
-        return []
+        return list()
 
     debug("[plan] successful %s %s", key_node.action, key_node.action)
     path = [[key_node.action]]

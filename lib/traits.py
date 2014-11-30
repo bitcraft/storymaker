@@ -1,5 +1,3 @@
-__author__ = 'Leif'
-
 import random
 
 
@@ -35,7 +33,7 @@ class Traits:
     default = [
         "strength",
         "perception",
-        "endurance", # endurance is used to modify hunger
+        "endurance",  # endurance is used to modify hunger
         "charisma",
         "intelligence",
         "agility",
@@ -51,7 +49,7 @@ class Traits:
     ]
 
     def __init__(self):
-        self.__traits = {}
+        self.__traits = dict()
         for name in self.default:
             self.__traits[name] = Trait(name, float)
 

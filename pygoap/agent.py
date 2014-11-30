@@ -1,5 +1,6 @@
 import logging
 import threading
+from operator import itemgetter
 
 from pygoap.environment import ObjectBase
 from pygoap.planning import PlanningNode, plan
@@ -21,9 +22,9 @@ class GoapAgent(ObjectBase):
         self.delta = MemoryManager()
         self.lock = threading.Lock()
         self.goals = set()          # all goals this instance can use
-        self.abilities = set()      # all actions this agent can perform (defined by action contexts!)
-        self.filters = []           # list of methods to use as a filter
-        self.plan = []              # list of actions to perform
+        self.abilities = set()      # all actions this agent can perform
+        self.filters = list()       # list of methods to use as a filter
+        self.plan = list()          # list of actions to perform
 
     def __repr__(self):
         return "<Agent: {}>".format(self.name)
@@ -32,8 +33,8 @@ class GoapAgent(ObjectBase):
         self.memory = MemoryManager()
         self.goals = set()
         self.abilities = set()
-        self.filters = []
-        self.plan = []
+        self.filters = list()
+        self.plan = list()
 
     def filter_precept(self, precept):
         """
@@ -41,7 +42,6 @@ class GoapAgent(ObjectBase):
         this can be used to simulate errors in judgement by the agent dropping the precept,
         or maybe a condition or limitation of the agent
         """
-
         for f in self.filters:
             for p in f(self, precept):
                 yield p
@@ -78,13 +78,13 @@ class GoapAgent(ObjectBase):
         # filter out goals that are not relevant (==0)
         # sort goals so that highest relevancy are first
         s = sorted(((g.get_relevancy(self.memory), g) for g in self.goals),
-                   reverse=True, key=lambda i: i[0])
+                   reverse=True, key=itemgetter(0))
         s = [i for i in s if i[0] > 0]
 
         debug("[agent] %s has goals %s", self, s)
 
         start_action = None
-        self.plan = []
+        self.plan = list()
         for score, goal in s:
             node = PlanningNode(None, start_action, self.abilities, self.delta,
                                 agent=self)
@@ -110,11 +110,11 @@ class GoapAgent(ObjectBase):
         try:
             return self.plan[-1]
         except IndexError:
-            return []
+            return list()
 
     def next_action(self):
         """
-        force the agent to stop the current action (context) and start the next onz2wsx2
+        force the agent to stop the current action (context) and start the next
         """
         try:
             self.plan.pop(-1)

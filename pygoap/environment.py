@@ -31,7 +31,7 @@ class ObjectBase:
         """
         generate a list of actions that could be used with this object
         """
-        return []
+        return list()
 
     def __repr__(self):
         return "<Object: {}>".format(self.name)
@@ -45,9 +45,9 @@ class Environment:
 
     def __init__(self):
         self.time = 0
-        self._agents = []
-        self._entities = []
-        self._positions = {}
+        self._agents = list()
+        self._entities = list()
+        self._positions = dict()
         self._action_queue = queue.Queue()
         self._precept_queue = queue.Queue()
 
