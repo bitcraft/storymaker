@@ -69,6 +69,7 @@ def search(start, finish, low, high):
                 if pushback:
                     heappush(heap, pushback)
                 pushback = entry
+
     return list()
 
 
@@ -90,7 +91,5 @@ if __name__ == '__main__':
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 1, 0, 0, 0, 0, 0, 0, 0, 0]]
 
-    # 1.53 non pushback
-    # 1.50 pushback...small improvement
-    print(test())
-    print(min(timeit.repeat("test()", number=10000, setup="from __main__ import test")))
+    print((test()))
+    print((min(timeit.repeat("test()", number=10000, setup="from __main__ import test"))))

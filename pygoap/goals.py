@@ -13,15 +13,23 @@ if carried out with the given state of the memory.
 touch() should modify a memory in some meaningful way as if the action was
 finished successfully.
 """
+__all__ = ['GoalBase',
+           'WeightedGoal',
+           'PreceptGoal',
+           'EvalGoal',
+           'AlwaysValidGoal',
+           'NeverValidGoal']
 
 import logging
+import re
 
-from pygoap.memory import MemoryManager
 from pygoap.environment2d import distance
 from pygoap.precepts import *
 
 
 debug = logging.debug
+
+eval_re = re.compile("(.+?)(>=|<=|>|<|!=|==)(.+)")
 
 
 class GoalBase:
@@ -60,14 +68,6 @@ class GoalBase:
         score = 1 - self.test(memory)
         return self.weight * score
 
-    def self_test(self):
-        """
-        make sure the goal is sane
-        """
-        memory = MemoryManager()
-        self.touch(memory)
-        assert not self.test(memory) == 0
-
     def __repr__(self):
         try:
             return "<Goal: {}>".format(self.name)
@@ -95,21 +95,21 @@ class PreceptGoal(GoalBase):
              SpeechPrecept, MoodPrecept)
 
     def __init__(self, *args, **kwargs):
-        super(PreceptGoal, self).__init__(*args, **kwargs)
-        assert (len(self.args) > 0)
-        _temp = set()
+        super().__init__(*args, **kwargs)
+        if len(self.args) == 0:
+            raise ValueError
+
         for a in self.args:
-            assert (isinstance(a, PreceptGoal.valid))
-            _temp.add(type(a))
-        self.required_types = frozenset(_temp)
-        if kwargs.get("name", None):
-            self.name = kwargs['name']
+            if not any(isinstance(a, i) for i in self.valid):
+                raise ValueError
+
+        self.required_types = frozenset(type(i) for i in self.args)
 
     def pretest(self, precepts):
         """
         A pretest is a quicker test that should be called on a Memory delta
         """
-        return not self.required_types.isdisjoint(map(type, precepts))
+        return not self.required_types.isdisjoint(list(map(type, precepts)))
 
     def test(self, memory):
         total = 0.0
@@ -122,61 +122,21 @@ class PreceptGoal(GoalBase):
         memory.update(self.args)
 
 
-class AVPreceptGoal(PreceptGoal):
-    """
-    Goal is always relevant, but will work with a planner
-    """
-
-    def get_relevancy(self, memory):
-        return self.weight
-
-
 class EvalGoal(GoalBase):
     """
     uses what i think is a somewhat safe way of evaluating python statements.
     feel free to contact me if you have a better way
     """
 
+    def __init__(self, condition, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.condition = condition
+        m = eval_re.match(condition)
+        if m is None:
+            raise ValueError
+
     def test(self, memory):
-        condition = self.args[0]
-
-        # this only works for simple expressions
-        cmpop = (">", "<", ">=", "<=", "==")
-
-        i = 0
-        index = 0
-        expr = condition.split()
-        while index == 0:
-            try:
-                index = expr.index(cmpop[i])
-            except:
-                i += 1
-                if i > 5:
-                    break
-
-        try:
-            side0 = float(eval(" ".join(expr[:index]), memory))
-            side1 = float(eval(" ".join(expr[index + 1:]), memory))
-        except NameError:
-            return 0.0
-
-        cmpop = cmpop[i]
-
-        if (cmpop == ">") or (cmpop == ">="):
-            if side0 == side1:
-                return 1.0
-            elif side0 > side1:
-                v = side0 / side1
-            elif side0 < side1:
-                if side0 == 0:
-                    return 0.0
-                else:
-                    v = 1 - ((side1 - side0) / side1)
-
-        if v > 1: v = 1.0
-        if v < 0: v = 0.0
-
-        return v
+        return eval(self.condition)
 
     def touch(self, memory):
         def do_it(expr, d):
@@ -192,7 +152,7 @@ class EvalGoal(GoalBase):
         d = dict()
         d['__builtins__'] = None
 
-        for k, v in d.items():
+        for k, v in list(d.items()):
             if k == '__builtins__':
                 continue
 
@@ -263,25 +223,3 @@ class PositionGoal(GoalBase):
         memory.add(PositionPrecept(self.args[0], self.args[1]))
 
 
-class HasItemGoal(GoalBase):
-    """
-    returns true if item is in inventory (according to memory)
-
-    when creating instance, 'owner' must be passed as a keyword.
-    its value can be any game object that is capable of holding an object
-
-    NOTE: testing can be true to many different objects,
-          but touching requires a specific object to function
-
-    any other keyword will be evaluated against precepts in the memory passed.
-    """
-
-    def test(self, memory):
-        for precept in memory.of_class(PositionPrecept):
-            if precept.position[0] == 'self' and precept.entity == self.args[0]:
-                return 1.0
-
-        return 0.0
-
-    def touch(self, memory):
-        memory.add(PositionPrecept(self.args[0], ('self', 0)))

@@ -1,5 +1,3 @@
-__author__ = 'leif'
-
 import math
 
 import pyglet
@@ -28,7 +26,7 @@ def cube_vertices(x, y, z, n):
 
 class Window(pyglet.window.Window):
     def __init__(self, env, *args, **kwargs):
-        super(Window, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.rotation = (-90, -50)
         self.position = (20, 20, 5)
 
@@ -120,7 +118,7 @@ class Window(pyglet.window.Window):
 
 def main():
     def update(dt):
-        print("== {:>8} {}".format(round(env.time, 2), "=" * 90))
+        print(("== {:>8} {}".format(round(env.time, 2), "=" * 90)))
 
         env.update(dt)
 

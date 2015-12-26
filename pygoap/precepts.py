@@ -4,6 +4,14 @@ Contains a set of useful precept types for use with an environment.
 implementation note:
     some evidence shows that named tuples are "slow".
 """
+__all__ = ['PositionPrecept',
+           'TimePrecept',
+           'DatumPrecept',
+           'QueryPrecept',
+           'ActionPrecept',
+           'PropositionPrecept',
+           'SpeechPrecept',
+           'MoodPrecept']
 
 from collections import namedtuple as nt
 

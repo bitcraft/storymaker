@@ -1,4 +1,5 @@
-import sys
+from . import easing
+
 
 test_fail_msg = "some goal is returning None on a test, this is a bug."
 
@@ -9,16 +10,20 @@ class ActionException(Exception):
 
 class Action:
     """
-    Action / Operator
+    Actions are performed over time
+    they have prerequisites that must be satisfied
+    they have effects that occur when action is finished
+    they have easing functions that modify how 'complete' the action is
     """
-    default_duration = 1
+    default_duration = 1.0
+    default_easing = easing.linear
     provides = list()
     requires = list()
     domain = None
 
-    def __init__(self, parent, prereqs=None, effects=None, name=None, memory=None, **kwargs):
+    def __init__(self, parent, prereqs=None, effects=None, memory=None,
+                 **kwargs):
         self.parent = parent
-        self.name = name
 
         self.prereqs = prereqs
         if self.prereqs is None:
@@ -32,8 +37,10 @@ class Action:
         if self.memory is None:
             self.memory = set()
 
-        self.duration = self.default_duration
-        self.finished = False
+        self._duration = self.default_duration
+        self.easing = self.default_easing
+        self._elapsed_time = 0.0
+        self._progress = 0.0
         self._interval = None
         self._generator = None
 
@@ -54,13 +61,9 @@ class Action:
         return a generator of update()
             the generator will repeat until self._duration is <= 0
         """
-        self.duration -= dt
         self._interval = dt
         self._generator = None
-
-        if self.duration <= 0:
-            self.finished = True
-
+        self._progress += dt
         return self
 
     def update(self, dt):
@@ -79,6 +82,7 @@ class Action:
     def pretest(self, memory):
         """
         Convenience function to pretest a Memory with all prereqs
+
         A pretest is a quicker test that should be called on a Memory delta
         """
         for prereq in self.prereqs:
@@ -99,9 +103,9 @@ class Action:
         try:
             return float(sum(values)) / len(self.prereqs)
         except TypeError:
-            print(zip(values, self.prereqs))
+            print((list(zip(values, self.prereqs))))
             print(test_fail_msg)
-            sys.exit(1)
+            raise
 
     def touch(self, memory=None):
         """
@@ -112,3 +116,19 @@ class Action:
 
         for i in self.effects:
             i.touch(memory)
+
+    @property
+    def progress(self):
+        return self.easing(self._elapsed_time / self._duration)
+
+    @property
+    def finished(self):
+        return self.progress >= 1.0
+
+    @property
+    def duration(self):
+        return self._duration
+
+    @property
+    def elapsed_teme(self):
+        return self._elapsed_time

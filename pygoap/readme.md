@@ -1,7 +1,7 @@
 # pyGOAP
 _______________________________________________________________________________
 
-## Advanced AI for Python
+## Advanced AI for Python 3.3+
 
 bitcraft (leif dot theden at gmail.com)
 github.com/bitcraft/pygoap

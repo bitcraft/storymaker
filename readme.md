@@ -4,12 +4,12 @@ pyGOAP
 ## Advanced AI for Python
 
 bitcraft (leif dot theden at gmail.com)
-v.4 - for python 3 (3.3 tested)
+v.4 - for python 3.4+
 
 If you have any problems or suggestions, please contact me via email.
 
-*Library released under the LGPL v3*
-All other files are public domain.
+*pyGOAP Library (/pygoap) released under the LGPL v3*
+All other files are under the MIT licence.
 
 Demo is: main.py
          lib/*

@@ -59,6 +59,11 @@ class Environment:
     def entities(self):
         return chain(self._entities, self._agents)
 
+    def start(self):
+        for e in self.entities:
+            if hasattr(e, 'start'):
+                e.start()
+
     def get_position(self, entity):
         raise NotImplementedError
 
@@ -70,21 +75,20 @@ class Environment:
         debug("[env] adding %s", entity)
 
         # add the agent
-        #if isinstance(entity, GoapAgent):
+        # if isinstance(entity, GoapAgent):
+        # TODO: check for entity type
         if 1:
             self._agents.append(entity)
             entity.environment = self
             self._positions[entity] = (None, (0, 0))
 
-            # hack to let the planner know who the memory belongs to
+            # let the planner know who the memory belongs to
             entity.process(DatumPrecept(entity, 'name', entity.name))
         else:
             self._entities.append(entity)
 
     def update(self, dt):
         """
-        ***  Time is expected to be in milliseconds   ***
-
         ***  All actions must have same unit of time  ***
 
         - Update our time
@@ -136,6 +140,8 @@ class Environment:
     def handle_actions(self, dt):
         """
         process all of the actions in the queue
+
+        eventually create thread pool to do this
         """
         next_queue = queue.Queue()
         touched = set()
@@ -174,17 +180,9 @@ class Environment:
     def model_action(self, action):
         """
         Used to model how an action interacts with the environment.
-        Environment can ability to silence actions if they are not able to run.
+        Environment has8 ability to silence actions if they are not able to run.
         """
         return action
-
-    def broadcast_hook(self, p):
-        # HACK: This print statement is used because there is no API for agents
-        #       to send speech to the console for debugging.
-        if isinstance(p, SpeechPrecept):
-            msg = '{:>12} {}'.format('{}:'.format(p.entity.name), p.message)
-            print(msg)
-        pass
 
     def model_precepts(self, precepts, other):
         """
@@ -193,3 +191,11 @@ class Environment:
         indiscriminately to all agents.
         """
         return precepts
+
+    def broadcast_hook(self, p):
+        # HACK: This print is used because there is no API for agents
+        #       to send speech to the console for debugging.
+        if isinstance(p, SpeechPrecept):
+            msg = '{:>12} {}'.format('{}:'.format(p.entity.name), p.message)
+            print(msg)
+        pass

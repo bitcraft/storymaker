@@ -1,8 +1,7 @@
-__author__ = 'Leif'
-
 from pygoap.agent import GoapAgent
 from pygoap.actions import Action
 from pygoap.goals import *
+from pygoap.precepts import *
 
 
 def test():
@@ -66,5 +65,6 @@ if __name__ == '__main__':
     # .61   action / operation change
     # .68   pretests
 
-    print(test())
-    print(min(timeit.repeat("test()", number=1000, repeat=10, setup="from __main__ import test")))
+    print((test()))
+    print((min(timeit.repeat("test()", number=1000, repeat=10,
+                             setup="from __main__ import test"))))

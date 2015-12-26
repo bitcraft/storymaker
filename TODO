@@ -1,7 +1,0 @@
-* TODO
-------
-implement weights for the planner
-create mechanism for starting actions shared by two or more agents
-move duration from action to context
-planner doesn't correctly use g or h scores...that needs to be fixed sometime
-planner will not handle actions that return more actions

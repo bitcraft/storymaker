@@ -11,9 +11,10 @@ class MemoryManager(set):
     max_size = 300
 
     def add(self, other):
+        assert (other is not None)
         if len(self) > MemoryManager.max_size:
             self.pop()
-        super(MemoryManager, self).add(other)
+        super().add(other)
 
     def of_class(self, klass):
         for i in self:

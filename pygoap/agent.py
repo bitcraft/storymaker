@@ -1,10 +1,9 @@
 import logging
-import threading
 from operator import itemgetter
 
-from pygoap.environment import ObjectBase
-from pygoap.planning import PlanningNode, plan
 from pygoap.memory import MemoryManager
+from pygoap.environment import ObjectBase
+from pygoap.planning import plan
 from pygoap.precepts import *
 
 
@@ -17,10 +16,9 @@ class GoapAgent(ObjectBase):
     """
 
     def __init__(self):
-        super(GoapAgent, self).__init__()
+        super().__init__()
         self.memory = MemoryManager()
         self.delta = MemoryManager()
-        self.lock = threading.Lock()
         self.goals = set()          # all goals this instance can use
         self.abilities = set()      # all actions this agent can perform
         self.filters = list()       # list of methods to use as a filter
@@ -29,31 +27,24 @@ class GoapAgent(ObjectBase):
     def __repr__(self):
         return "<Agent: {}>".format(self.name)
 
-    def reset(self):
-        self.memory = MemoryManager()
-        self.goals = set()
-        self.abilities = set()
-        self.filters = list()
-        self.plan = list()
-
     def filter_precept(self, precept):
         """
         precepts can be put through filters to change them.
-        this can be used to simulate errors in judgement by the agent dropping the precept,
-        or maybe a condition or limitation of the agent
+        this can be used to simulate errors in judgement by the agent dropping
+        the precept, or maybe a condition or limitation of the agent
         """
         for f in self.filters:
             for p in f(self, precept):
                 yield p
 
-    def process_list(self, all_precepts):
+    def process_list(self, precepts):
         """
-        feed the agent precepts.  do not send a single precept otherwise strange errors will occur.
+        feed the agent precepts.
         """
-        if not isinstance(all_precepts, (tuple, list, set)):
-            all_precepts = [all_precepts]
+        if not isinstance(precepts, (tuple, list, set)):
+            precepts = [precepts]
 
-        for precept in all_precepts:
+        for precept in precepts:
             self.process(precept)
 
     def process(self, precept):
@@ -65,7 +56,6 @@ class GoapAgent(ObjectBase):
             if not isinstance(precept, TimePrecept):
                 self.delta.add(precept)
 
-    # hack
     def plan_if_needed(self):
         if len(self.plan) == 0:
             self.find_plan()
@@ -86,13 +76,12 @@ class GoapAgent(ObjectBase):
         start_action = None
         self.plan = list()
         for score, goal in s:
-            node = PlanningNode(None, start_action, self.abilities, self.delta,
-                                agent=self)
-            tentative_plan = plan(node, goal)
+            tentative = plan(goal, self, start_action, self.abilities,
+                             self.delta)
 
-            if tentative_plan:
-                tentative_plan.pop(-1)
-                self.plan = tentative_plan
+            if tentative:
+                tentative.pop(-1)
+                self.plan = tentative
                 debug("[agent] %s has planned to %s", self, goal)
                 debug("[agent] %s has plan %s", self, self.plan)
                 break

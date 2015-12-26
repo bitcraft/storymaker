@@ -38,7 +38,6 @@ def clip(vector, lowest, highest):
 
 
 class Pathfinding2D:
-
     @staticmethod
     def get_surrounding(position):
         """
@@ -53,19 +52,18 @@ class Pathfinding2D:
     def calc_h(position1, position2):
         return distance(position1, position2)
 
-    @staticmethod
-    def factory(position):
-        # EPIC HACK
-        # fix this when position conventions are standardized
-        try:
-            if len(position[1]) == 2:
-                x, y = position[1]
-            else:
-                x, y = position
-        except TypeError:
-            x, y = position
-
-        return Node((x, y))
+    # @staticmethod
+    # def factory(position):
+    #     # fix this when position conventions are standardized
+    #     try:
+    #         if len(position[1]) == 2:
+    #             x, y = position[1]
+    #         else:
+    #             x, y = position
+    #     except TypeError:
+    #         x, y = position
+    #
+    #     return Node((x, y))
 
 
 class Environment2D(Environment, Pathfinding2D):
@@ -73,15 +71,14 @@ class Environment2D(Environment, Pathfinding2D):
 
     This class is featured enough to run a simple simulation.
     """
-
     def __init__(self, width=10, height=10):
-        super(Environment2D, self).__init__()
+        super().__init__()
         self._positions = dict()
         self.width = width
         self.height = height
 
     def add(self, entity, position=None):
-        super(Environment2D, self).add(entity)
+        super().add(entity)
         self.set_position(entity, self.default_position())
 
     def set_position(self, entity, position):
@@ -100,14 +97,13 @@ class Environment2D(Environment, Pathfinding2D):
         """
         Simulate vision by sending precepts to the parent.
         """
-
         model = self.model_precept
+        get_position = self.get_position
 
         for entity in self.entities:
             parent.process(
                 model(
-                    PositionPrecept(
-                        entity, self.get_position(entity)),
+                    PositionPrecept(entity, get_position(entity)),
                     parent
                 )
             )
@@ -116,14 +112,12 @@ class Environment2D(Environment, Pathfinding2D):
         """
         Return all objects exactly at a given position.
         """
-
         return [obj for obj in self.entities if obj.position == position]
 
     def objects_near(self, position, radius):
         """
         Return all objects within radius of position.
         """
-
         radius2 = radius * radius
         return [obj for obj in self.entities
                 if distance2(position, obj.position) <= radius2]
@@ -140,12 +134,11 @@ class Environment2D(Environment, Pathfinding2D):
         return a list of positions that are possible for this agent to be
         in if it were to move [dist] spaces or less.
         """
-
         x, y = agent.environment.get_position(agent)[1]
         pos = list()
 
-        for xx in xrange(x - dist, x + dist):
-            for yy in xrange(y - dist, y + dist):
+        for xx in range(x - dist, x + dist):
+            for yy in range(y - dist, y + dist):
                 if distance2((xx, yy), (x, y)) <= dist:
                     pos.append((self, (xx, yy)))
 
